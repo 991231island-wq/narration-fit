@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>馒头为什么会胀起来 · 口播对照</title>
+<style>
+:root {
+  --paper: #f3efe4;
+  --ink: #1e1a16;
+  --muted: #5e564c;
+  --line: #ddd4c4;
+  --card: #faf7f1;
+  --over: #9d3418;
+  --over-bg: #f6ddd6;
+  --ok: #1f6a45;
+  --ok-bg: #dceadf;
+  --del: #f0d0c8;
+  --ins: #d5eadc;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Source Han Sans SC", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 48px; }
+.kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+h1 {
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", "Songti SC", "Noto Serif SC", serif;
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 6px 0 12px;
+}
+h2 { font-size: 18px; margin: 0; }
+.speed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.speed-readout strong {
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.summary div {
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.summary dt { color: var(--muted); font-size: 12px; }
+.summary dd { margin: 0; font-size: 22px; font-variant-numeric: tabular-nums; }
+.legend { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  background: var(--line);
+}
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.over { background: var(--over-bg); color: var(--over); }
+.grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ok);
+  border-radius: 14px;
+  padding: 14px;
+}
+.card.over { border-left-color: var(--over); }
+.visual { margin: 4px 0 8px; color: var(--muted); }
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cols { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+.block {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.block h3 { margin: 0 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.copy { margin: 0; white-space: pre-wrap; word-break: break-word; }
+del { background: var(--del); text-decoration: line-through; }
+ins { background: var(--ins); text-decoration: none; }
+.note, .hint { margin: 8px 0 0; font-size: 14px; }
+.hint { color: var(--over); }
+.unassigned, .keeps, .errors {
+  margin-top: 16px;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+}
+footer { margin-top: 22px; color: var(--muted); font-size: 13px; }
+footer p { margin: 0 0 8px; }
+@media (min-width: 720px) {
+  .cols { grid-template-columns: 1fr 1fr; }
+  h1 { font-size: 36px; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top">
+<p class="kicker">NARRATION FIT · 逐段口播对照</p>
+<h1>馒头为什么会胀起来</h1>
+<div class="speed">
+<span class="pill ok">通过</span>
+<span>策略 <strong class="strategy">expand</strong></span>
+<span class="speed-readout">本次语速 <strong>4.7</strong> 字／秒</span>
+</div>
+<dl class="summary">
+<div><dt>总预算</dt><dd>168</dd></div>
+<div><dt>原文</dt><dd>165</dd></div>
+<div><dt>改后</dt><dd>143</dd></div>
+<div><dt>超预算</dt><dd>0</dd></div>
+<div><dt>未分配</dt><dd>0</dd></div>
+</dl>
+<p class="legend"><del>删除线</del>是从原文拿掉的字。<ins>绿色底</ins>是改后新增的字。字数由脚本重算，标点计入。 expand 偏短阈值 0.7：原文低于预算的这个比例就建议扩写；改后仍不得超过预算。超预算的段要先修剪。</p>
+</header>
+<div class="grid">
+<article class="card ok" data-segment="s1">
+<header>
+<h2>s1 · 开篇案板</h2>
+<p class="visual">案板上的面粉和一块还没发起来的面团</p>
+</header>
+<p class="meta">
+<span>0–6 秒</span>
+<span>时长 6 秒</span>
+<span>预算 28</span>
+<span>原文 47</span>
+<span>改后 25</span>
+<span>超 0</span>
+<span>欠 3</span>
+<span class="pill ok">先修剪</span>
+</p>
+<div class="cols">
+<section class="block"><h3>原文</h3><p class="copy"><del>面板上这块</del>面团还<del>是</del>瘪<del>的</del>。面粉、水<del>和一点点</del>酵母<del>拌在一起</del>以后，它<del>要先安静地等，体积才会</del>自己<del>涨</del>起来。</p></section>
+<section class="block"><h3>改后</h3><p class="copy">面团还瘪<ins>着</ins>。面粉、水<ins>加</ins>酵母以后，<ins>要等</ins>它自己<ins>胀</ins>起来。</p></section>
+</div>
+<p class="note">这段原稿超预算，expand 前先修剪。</p>
+
+</article>
+<article class="card ok" data-segment="s2">
+<header>
+<h2>s2 · 发酵</h2>
+<p class="visual">盖着湿布的面盆，旁边一只计时的钟</p>
+</header>
+<p class="meta">
+<span>6–18 秒</span>
+<span>时长 12 秒</span>
+<span>预算 56</span>
+<span>原文 13</span>
+<span>改后 55</span>
+<span>超 0</span>
+<span>欠 1</span>
+<span class="pill ok">已扩写</span>
+</p>
+<div class="cols">
+<section class="block"><h3>原文</h3><p class="copy">盖上湿布，放在暖和的地方。</p></section>
+<section class="block"><h3>改后</h3><p class="copy">盖上湿布，放在暖和的地方。<ins>酵母吃掉面团里的糖，吐出二氧化碳。气体被面筋网住，面团就慢慢鼓起来。不用对着它吹气。</ins></p></section>
+</div>
+<p class="note">12 秒画面只有一句。扩写只补发酵这件事：酵母、气体、面筋，不另起炉灶。</p>
+
+</article>
+<article class="card ok" data-segment="s3">
+<header>
+<h2>s3 · 气孔</h2>
+<p class="visual">掰开的馒头切面，气孔疏密不一</p>
+</header>
+<p class="meta">
+<span>18–28 秒</span>
+<span>时长 10 秒</span>
+<span>预算 47</span>
+<span>原文 58</span>
+<span>改后 35</span>
+<span>超 0</span>
+<span>欠 12</span>
+<span class="pill ok">先修剪</span>
+</p>
+<div class="cols">
+<section class="block"><h3>原文</h3><p class="copy"><del>蒸好以后</del>掰开看。气孔是发酵留下的，不是后来吹进去的。孔<del>大</del>而<del>匀，说明酵母工作得比较稳；孔又小又</del>密，常常是<del>醒发</del>时间不够。</p></section>
+<section class="block"><h3>改后</h3><p class="copy">掰开看。气孔是发酵留下的，不是后来吹进去的。孔<ins>小</ins>而密，常常是时间不够。</p></section>
+</div>
+<p class="note">原稿超预算，先修剪。必留句仍在本段。</p>
+
+</article>
+<article class="card ok" data-segment="s4">
+<header>
+<h2>s4 · 出锅</h2>
+<p class="visual">笼屉掀开，热气里一屉馒头</p>
+</header>
+<p class="meta">
+<span>28–36 秒</span>
+<span>时长 8 秒</span>
+<span>预算 37</span>
+<span>原文 47</span>
+<span>改后 28</span>
+<span>超 0</span>
+<span>欠 9</span>
+<span class="pill ok">先修剪</span>
+</p>
+<div class="cols">
+<section class="block"><h3>原文</h3><p class="copy">掀开笼屉<del>时</del>，热气先<del>冒</del>出来<del>，馒头再露面</del>。那一口气已经留在里面<del>。</del>凉了<del>以后按一按，它</del>不该塌<del>成一张饼</del>。</p></section>
+<section class="block"><h3>改后</h3><p class="copy">掀开笼屉，热气先出来。那一口气已经留在里面<ins>，</ins>凉了不该塌。</p></section>
+</div>
+<p class="note">原稿超预算，先修剪到出锅这一个动作。</p>
+
+</article>
+</div>
+<section class="keeps"><h2>必留句</h2><ul><li>气孔是发酵留下的，不是后来吹进去的 → s3</li></ul></section>
+<footer><p>v1：去掉空白后按字符计数，标点计入。改规则必须升版本。</p><p>budget_chars = floor((end_s - start_s) × chars_per_sec)；用十进制 Decimal 计算后向负无穷取整，避免二进制浮点把 10×4.7 截成 46。</p><p>本次语速 4.7 字／秒来自用户输入，脚本没有改写。</p><p>舒适语速建议 4.7 字／秒：澄象创空间 README「自然讲课实测」参考值，不是行业标准，脚本不自动套用。</p><p>加快语速建议 5.5 字／秒：本 Skill 产品默认，不是口播实测，脚本不自动套用。</p><p>语速上限默认 6.0 字／秒：产品默认，防止 keep_faster 无上限加速；该数字是否适合所有口音未核实。</p><p>舒适区参考 3.5～4.7 字／秒是否适合所有口音或方言：未核实，不要写成科学结论。</p><p>本页只对照文案和字数预算，不代表真人口播已经念过，也不渲染成片。</p></footer>
+</main>
+</body>
+</html>
