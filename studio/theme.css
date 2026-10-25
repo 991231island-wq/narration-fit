@@ -1,0 +1,505 @@
+/* 口播对轴改稿 · 工作室主题。对照区样式只作用在 #nf-diff，避免碰到 Gradio 自己的组件。 */
+
+:root,
+.dark {
+  color-scheme: light;
+  --body-background-fill: #efe6d6 !important;
+  --background-fill-primary: #fffdf8 !important;
+  --background-fill-secondary: #f6efe4 !important;
+  --block-background-fill: #fffdf8 !important;
+  --block-border-color: #e4d5c0 !important;
+  --body-text-color: #1c1915 !important;
+  --block-label-text-color: #5c5348 !important;
+  --block-title-text-color: #1c1915 !important;
+  --input-background-fill: #fffdf8 !important;
+  --border-color-primary: #e4d5c0 !important;
+}
+
+body,
+.gradio-container {
+  background: #efe6d6 !important;
+  color: #1c1915 !important;
+}
+
+.gradio-container {
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  padding: 20px 20px 48px !important;
+}
+
+.gradio-container > footer {
+  display: none !important;
+}
+
+.nf-hero {
+  padding: 4px 2px 8px;
+}
+
+.nf-kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: #8a7b68;
+}
+
+.nf-hero h1 {
+  margin: 4px 0 8px;
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", "Songti SC", "Noto Serif SC", serif;
+  font-size: 36px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.nf-lede {
+  margin: 0 0 12px;
+  max-width: 44rem;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #3c342c;
+}
+
+.nf-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nf-points li {
+  background: rgba(255, 253, 248, 0.88);
+  border: 1px solid #e4d5c0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #3f382f;
+}
+
+.nf-overview {
+  background: #fffdf8;
+  border: 1px solid #e4d5c0;
+  border-radius: 18px;
+  padding: 14px 16px 12px;
+  margin: 8px 0 14px;
+}
+
+.nf-overview-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px 18px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.nf-overview h2 {
+  margin: 2px 0 0;
+  font-family: "Iowan Old Style", Palatino, "Songti SC", "Noto Serif SC", serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.nf-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nf-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #f3efe6;
+  color: #3f382f;
+  font-size: 13px;
+}
+
+.nf-badge.ok {
+  background: #dceadf;
+  color: #1f6a45;
+}
+
+.nf-badge.bad {
+  background: #f6ddd6;
+  color: #9d3418;
+}
+
+.nf-stats {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nf-stat {
+  background: #faf6ef;
+  border-radius: 12px;
+  padding: 8px 10px 6px;
+}
+
+.nf-stat span {
+  display: block;
+  color: #6d6256;
+  font-size: 12px;
+}
+
+.nf-stat strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.nf-stat.danger strong {
+  color: #9d3418;
+}
+
+.nf-section {
+  margin: 18px 0 8px;
+  font-family: "Iowan Old Style", Palatino, "Songti SC", "Noto Serif SC", serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.nf-note,
+.nf-hint {
+  margin: 0 0 8px;
+  color: #5c5348;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.nf-rail {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 0;
+}
+
+.nf-rail li {
+  flex: 1;
+  background: #fffdf8;
+  border: 1px solid #e4d5c0;
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: #8a7b68;
+}
+
+.nf-rail .idx {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.nf-rail strong {
+  display: block;
+  margin-top: 2px;
+  color: #1c1915;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.nf-rail li.done {
+  background: #f3faf6;
+  border-color: #b7d7c4;
+}
+
+.nf-rail li.active {
+  background: #fff6ec;
+  border-color: #9a5322;
+}
+
+.nf-rail li.error {
+  background: #fdf3ef;
+  border-color: #e3b2a4;
+}
+
+.nf-rail li.wait strong {
+  color: #8a7b68;
+}
+
+.nf-rail-note {
+  margin: 0 0 8px;
+  color: #6d6256;
+  font-size: 13px;
+}
+
+#run-status {
+  border: 1px solid #e4d5c0 !important;
+  border-radius: 16px !important;
+  background: #fffdf8 !important;
+  padding: 2px 14px 6px !important;
+}
+
+#run-status h3 {
+  font-family: "Iowan Old Style", Palatino, "Songti SC", serif;
+  margin-bottom: 6px;
+}
+
+.nf-editor {
+  border: 1px solid #e4d5c0 !important;
+  border-radius: 18px !important;
+  background: #fffdf8 !important;
+  padding: 10px 12px 12px !important;
+}
+
+button.primary,
+.primary > button {
+  background: #9a5322 !important;
+  border-color: #9a5322 !important;
+  color: #fffaf3 !important;
+}
+
+button.primary:hover,
+.primary > button:hover {
+  background: #7c411c !important;
+}
+
+.nf-footer {
+  margin-top: 22px;
+  color: #6d6256;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.nf-footer p {
+  margin: 0 0 6px;
+}
+
+.nf-footer code {
+  font-size: 12px;
+}
+
+/* —— 内嵌 diff.html 正文 —— */
+#nf-diff {
+  background: #f3efe4;
+  color: #1e1a16;
+  border: 1px solid #e4d5c0;
+  border-radius: 18px;
+  overflow: auto;
+}
+
+#nf-diff .wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 20px 16px 36px;
+}
+
+#nf-diff .kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #5e564c;
+}
+
+#nf-diff h1 {
+  font-family: "Iowan Old Style", Palatino, "Songti SC", "Noto Serif SC", serif;
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 6px 0 12px;
+}
+
+#nf-diff h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+#nf-diff .speed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  background: #fffdf8;
+  border: 1px solid #ddd4c4;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+#nf-diff .speed-readout strong {
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+
+#nf-diff .summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+#nf-diff .summary div {
+  background: #fffdf8;
+  border: 1px solid #ddd4c4;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+#nf-diff .summary dt {
+  color: #5e564c;
+  font-size: 12px;
+}
+
+#nf-diff .summary dd {
+  margin: 0;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+#nf-diff .legend {
+  color: #5e564c;
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+
+#nf-diff .pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  background: #ddd4c4;
+}
+
+#nf-diff .pill.ok {
+  background: #dceadf;
+  color: #1f6a45;
+}
+
+#nf-diff .pill.over {
+  background: #f6ddd6;
+  color: #9d3418;
+}
+
+#nf-diff .grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+#nf-diff .card {
+  background: #faf7f1;
+  border: 1px solid #ddd4c4;
+  border-left: 4px solid #1f6a45;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+#nf-diff .card.over {
+  border-left-color: #9d3418;
+}
+
+#nf-diff .visual {
+  margin: 4px 0 8px;
+  color: #5e564c;
+}
+
+#nf-diff .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: #5e564c;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+#nf-diff .cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#nf-diff .block {
+  background: #fff;
+  border: 1px solid #ddd4c4;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+#nf-diff .block h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #5e564c;
+  font-weight: 600;
+}
+
+#nf-diff .copy {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#nf-diff del {
+  background: #f0d0c8;
+  text-decoration: line-through;
+}
+
+#nf-diff ins {
+  background: #d5eadc;
+  text-decoration: none;
+}
+
+#nf-diff .note,
+#nf-diff .hint {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+#nf-diff .hint {
+  color: #9d3418;
+}
+
+#nf-diff .unassigned,
+#nf-diff .keeps,
+#nf-diff .errors {
+  margin-top: 16px;
+  background: #fffdf8;
+  border: 1px solid #ddd4c4;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+#nf-diff pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+#nf-diff footer {
+  display: block !important;
+  margin-top: 22px;
+  color: #5e564c;
+  font-size: 13px;
+}
+
+#nf-diff footer p {
+  margin: 0 0 8px;
+}
+
+@media (max-width: 860px) {
+  .nf-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .nf-rail {
+    flex-direction: column;
+  }
+
+  .nf-hero h1 {
+    font-size: 30px;
+  }
+
+  #nf-diff .cols {
+    grid-template-columns: 1fr;
+  }
+}

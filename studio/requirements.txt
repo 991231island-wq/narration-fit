@@ -1,0 +1,5 @@
+# 仅本地 Gradio 工作室需要。Skill 脚本 scripts/ 仍只使用 Python 标准库。
+# 在仓库根目录：python -m pip install -r studio/requirements.txt
+# 本环境验证过的版本：gradio 5.50.0、openai 2.54.0（Python 3.12）。
+gradio>=5.23,<6
+openai>=1.40,<3
