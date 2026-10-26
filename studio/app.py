@@ -654,34 +654,38 @@ def build_ui() -> gr.Blocks:
                 padding=False,
             )
             title_box = gr.Textbox(label="这条口播叫什么", placeholder="例如：馒头为什么会胀起来")
-            clip = gr.Video(
-                label="本地视频（可选）",
-                sources=["upload"],
-                interactive=True,
-                height=320,
-                elem_id="clip-video",
-            )
-            with gr.Row():
-                playhead = gr.Number(
-                    value=0,
-                    label="当前播放位置（秒）",
-                    info="无视频时填秒数。",
-                    elem_id="playhead",
-                    precision=2,
-                    minimum=0,
+            with gr.Group(elem_classes=["nf-zone"]):
+                gr.HTML('<h2 class="nf-section nf-subhead">视频与打点</h2>', padding=False)
+                clip = gr.Video(
+                    label="本地视频（可选）",
+                    sources=["upload"],
+                    interactive=True,
+                    height=320,
+                    elem_id="clip-video",
                 )
-                btn_mark = gr.Button("在当前播放位置添加分段点", variant="secondary")
-            seg_table = gr.Dataframe(
-                headers=["段", "起（秒）", "止（秒）", "时长", "口播"],
-                datatype=["str", "str", "str", "str", "str"],
-                value=[],
-                interactive=False,
-                wrap=True,
-                show_label=False,
-                max_height=240,
-                elem_id="clip-table",
-            )
-            with gr.Group(elem_classes=["nf-editor"]):
+                with gr.Row():
+                    playhead = gr.Number(
+                        value=0,
+                        label="当前播放位置（秒）",
+                        info="无视频时填秒数。",
+                        elem_id="playhead",
+                        precision=2,
+                        minimum=0,
+                    )
+                    btn_mark = gr.Button("在当前播放位置添加分段点", variant="secondary")
+            with gr.Group(elem_classes=["nf-zone"]):
+                gr.HTML('<h2 class="nf-section nf-subhead">分段</h2>', padding=False)
+                seg_table = gr.Dataframe(
+                    headers=["段", "起（秒）", "止（秒）", "时长", "口播"],
+                    datatype=["str", "str", "str", "str", "str"],
+                    value=[],
+                    interactive=False,
+                    wrap=True,
+                    show_label=False,
+                    max_height=240,
+                    elem_id="clip-table",
+                )
+            with gr.Group(elem_classes=["nf-zone", "nf-editor"]):
                 gr.HTML('<h2 class="nf-section nf-subhead">逐段写口播</h2>', padding=False)
                 gr.HTML(
                     '<p class="nf-hint">点一行，写下口播，再保存。</p>',
@@ -704,7 +708,7 @@ def build_ui() -> gr.Blocks:
                 with gr.Row():
                     btn_save = gr.Button("保存这一段", variant="secondary")
                     btn_delete = gr.Button("删掉这一段", variant="secondary")
-            with gr.Row():
+            with gr.Row(elem_classes=["nf-actions"]):
                 btn_demo = gr.Button("一键演示", variant="secondary")
                 btn_next = gr.Button("下一步", variant="primary", interactive=False)
             step1_note = gr.Markdown("还没有分段。")
@@ -714,31 +718,32 @@ def build_ui() -> gr.Blocks:
                 '<div class="nf-step-head"><p class="nf-step-index">STEP 02</p><h2 class="nf-section">选怎么改</h2></div>',
                 padding=False,
             )
-            strategy = gr.Radio(
-                choices=["trim", "keep_faster", "expand"],
-                value="trim",
-                label="策略",
-            )
-            chars_per_sec = gr.Number(
-                value=4.7,
-                label="语速（字／秒）",
-                minimum=0.1,
-                maximum=6.0,
-                step=0.1,
-            )
-            must_keep = gr.Textbox(
-                label="必留句",
-                lines=3,
-                placeholder="每行一句，可选",
-            )
-            expand_short_ratio = gr.Number(
-                value=0.7,
-                label="expand 偏短阈值",
-                minimum=0.1,
-                maximum=1.0,
-                step=0.05,
-            )
-            with gr.Row():
+            with gr.Group(elem_classes=["nf-zone"]):
+                strategy = gr.Radio(
+                    choices=["trim", "keep_faster", "expand"],
+                    value="trim",
+                    label="策略",
+                )
+                chars_per_sec = gr.Number(
+                    value=4.7,
+                    label="语速（字／秒）",
+                    minimum=0.1,
+                    maximum=6.0,
+                    step=0.1,
+                )
+                must_keep = gr.Textbox(
+                    label="必留句",
+                    lines=3,
+                    placeholder="每行一句，可选",
+                )
+                expand_short_ratio = gr.Number(
+                    value=0.7,
+                    label="expand 偏短阈值",
+                    minimum=0.1,
+                    maximum=1.0,
+                    step=0.05,
+                )
+            with gr.Row(elem_classes=["nf-actions"]):
                 btn_back = gr.Button("上一步", variant="secondary")
                 btn_run = gr.Button("开始改稿", variant="primary")
 
@@ -767,7 +772,7 @@ def build_ui() -> gr.Blocks:
                 max_height=280,
                 elem_id="segment-table",
             )
-            with gr.Group(elem_classes=["nf-editor"]):
+            with gr.Group(elem_classes=["nf-zone", "nf-editor"]):
                 gr.HTML('<h2 class="nf-section nf-subhead">改一段，立刻重验</h2>', padding=False)
                 segment = gr.Dropdown(choices=[], label="选择段落", interactive=True)
                 meta = gr.Markdown("选一段。")

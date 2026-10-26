@@ -147,7 +147,7 @@ body,
 }
 
 .nf-step-head {
-  margin: 2px 0 10px;
+  margin: 2px 0 4px;
 }
 
 .nf-section {
@@ -158,8 +158,15 @@ body,
   color: var(--ck-text);
 }
 
+.nf-step-head h2,
 .nf-subhead {
-  margin-top: 4px;
+  border-left: 3px solid var(--ck-accent-a);
+  padding-left: 10px;
+}
+
+.nf-subhead {
+  margin-top: 0;
+  margin-bottom: 10px;
   font-size: 18px;
 }
 
@@ -352,12 +359,7 @@ body,
 }
 
 .nf-editor {
-  border: 1px solid var(--ck-border) !important;
-  border-radius: var(--ck-radius-card) !important;
-  background: var(--ck-surface) !important;
   box-shadow: none !important;
-  padding: 12px 14px 14px !important;
-  margin-top: 8px !important;
 }
 
 button.primary,
@@ -425,7 +427,7 @@ button.secondary:hover,
 }
 
 .nf-step-panel {
-  border: 1px solid var(--ck-border) !important;
+  border: 1px solid var(--ck-border-strong) !important;
   border-radius: var(--ck-radius-card) !important;
   background: var(--ck-surface) !important;
   box-shadow: var(--ck-card-shadow) !important;
@@ -433,13 +435,40 @@ button.secondary:hover,
   margin-bottom: 16px !important;
 }
 
-/* Gradio 的 Group / Form 用 --block-border-color 当底，缝隙和透明的
-   HTML 标题、矮按钮旁边就会露出浅灰横条。卡片里改回白底。 */
-.nf-step-panel .styler,
-.nf-step-panel .form,
-.nf-editor .styler {
+/* 大卡片内部保持白底，避免 Gradio 用边框色画出灰条。
+   内嵌分区单独用浅紫，和白卡片、页底拉开。 */
+.nf-step-panel > .styler {
+  gap: 14px !important;
   background: var(--ck-surface) !important;
   border-color: transparent !important;
+}
+
+.nf-step-panel .form {
+  background: var(--ck-surface) !important;
+  border-color: transparent !important;
+}
+
+.nf-zone {
+  border: 1px solid var(--ck-border) !important;
+  border-radius: var(--ck-radius-card) !important;
+  background: var(--ck-surface-soft) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.nf-step-panel .nf-zone > .styler {
+  gap: 12px !important;
+  padding: 14px 16px 16px !important;
+  background: var(--ck-surface-soft) !important;
+  border-color: transparent !important;
+  border-radius: var(--ck-radius-card) !important;
+}
+
+.nf-actions {
+  margin-top: 2px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid var(--ck-border);
+  gap: 10px !important;
 }
 
 .nf-step-panel .row {
