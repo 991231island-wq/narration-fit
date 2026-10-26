@@ -650,6 +650,36 @@ button.secondary:hover,
   color: var(--ck-muted);
 }
 
+/* 数字框保持 type=number，只去掉浏览器默认的上下微调箭头。 */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+  display: none;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Gradio 给短 HTML / Markdown 块写了 inline overflow:auto。
+   内容只高出 1px 时，标题右侧会冒出带上下箭头的细滚动条。
+   这些块没有高度上限，滚动交给整页。对照表和 diff 仍用自己的容器滚。 */
+.block.hide-container {
+  overflow: visible !important;
+}
+
+/* 单行文本框被写成 overflow-y:scroll，空着也显示滚动条。 */
+textarea[rows="1"] {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+textarea:not([rows="1"]) {
+  overflow-y: auto !important;
+}
+
 @media (max-width: 860px) {
   .nf-hero {
     padding: 22px 18px 16px;
