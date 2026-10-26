@@ -44,6 +44,9 @@
   --block-title-background-fill: transparent !important;
   --block-title-border-color: transparent !important;
   --block-title-border-width: 0px !important;
+  --block-label-background-fill: transparent !important;
+  --block-label-border-color: transparent !important;
+  --block-label-border-width: 0px !important;
   --input-background-fill: var(--ck-surface) !important;
   --border-color-primary: var(--ck-border) !important;
 }
