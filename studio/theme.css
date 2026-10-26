@@ -132,54 +132,12 @@ body,
 }
 
 .nf-hero h1 {
-  margin: 6px 0 8px;
+  margin: 6px 0 0;
   font-size: 34px;
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--ck-accent-a);
-}
-
-.nf-lede {
-  margin: 0;
-  max-width: 40rem;
-  font-size: 16px;
-  line-height: 1.65;
-  color: var(--ck-text-soft);
-}
-
-.nf-flow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 0;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.nf-flow li {
-  display: flex;
-  align-items: center;
-}
-
-.nf-flow li + li::before {
-  content: "→";
-  margin: 0 10px;
-  color: var(--ck-accent-mid);
-  font-weight: 700;
-}
-
-.nf-flow span {
-  display: inline-flex;
-  align-items: center;
-  background: var(--ck-surface);
-  border: 1px solid var(--ck-border);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 13px;
-  color: var(--ck-text);
-  box-shadow: var(--ck-card-shadow);
 }
 
 .nf-step-head {
@@ -363,6 +321,16 @@ body,
 #wizard-hint {
   margin: 0 0 14px !important;
   padding: 10px 16px !important;
+}
+
+#wizard-hint:not(:has(p)),
+#wizard-hint:has(p:empty) {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  min-height: 0 !important;
+  background: transparent !important;
 }
 
 #wizard-hint p,

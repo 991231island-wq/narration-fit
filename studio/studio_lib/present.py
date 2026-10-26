@@ -8,10 +8,10 @@ from typing import Any
 TABLE_HEADERS = ["段", "标签", "时长", "预算", "原文", "改后", "超 / 欠", "状态"]
 
 SOURCE_LABELS = {
-    "preset": "预置通过结果 · 未调用模型",
+    "preset": "预置结果",
     "model": "模型改稿",
-    "recheck": "脚本重验 · 未调用模型",
-    "aligned": "已对齐 · 尚未改稿",
+    "recheck": "脚本重验",
+    "aligned": "已对齐",
 }
 
 STEP_ORDER = ("align", "validate", "rewrite", "recheck")
@@ -142,9 +142,7 @@ def steps_html(
     return f'<ol class="nf-rail">{"".join(items)}</ol>{note}'
 
 
-EMPTY_DIFF = (
-    '<div id="nf-diff"><p class="empty">对照会在改稿结束后出现在这里。</p></div>'
-)
+EMPTY_DIFF = '<div id="nf-diff"><p class="empty">还没有对照。</p></div>'
 
 
 def diff_preview(page: str) -> str:
@@ -159,10 +157,10 @@ def diff_preview(page: str) -> str:
 
 
 WIZARD_STEPS = (
-    (1, "准备材料", "分好段，把每段口播写上，点「下一步」。"),
-    (2, "选怎么改", "选好策略和语速，点「开始改稿」。"),
-    (3, "改稿", "正在对齐、校验和改稿，结束后会自动打开第 4 步。"),
-    (4, "对照下载", "看总览和对照。要重跑，点「再改一次」。"),
+    (1, "准备材料"),
+    (2, "选怎么改"),
+    (3, "改稿"),
+    (4, "对照下载"),
 )
 
 
@@ -183,18 +181,15 @@ def materials_present(timeline: str, draft: str) -> bool:
 
 
 def wizard_caption(step: int, extra: str = "") -> str:
-    step = min(4, max(1, int(step)))
-    _, name, action = WIZARD_STEPS[step - 1]
-    text = f"现在是第 {step} 步，共 4 步 · {name}。{action}"
-    if extra:
-        text = f"{text} {extra}"
-    return text
+    """步骤名只出现在导航和 STEP 标题。这里默认空，extra 才是一句提示。"""
+    min(len(WIZARD_STEPS), max(1, int(step)))
+    return (extra or "").strip()
 
 
 def segment_fields(state: dict[str, Any] | None, segment_id: str | None) -> tuple[str, str, str]:
     """返回 revised、original、给编辑区看的一行说明。"""
     if not state or not segment_id:
-        return "", "", "改稿跑完后，在这里选一段改「改后」，再重验。"
+        return "", "", "选一段。"
     report = state.get("report") or {}
     fit = state.get("fit") or {}
     row = None
@@ -236,7 +231,9 @@ def status_block(
     errors: list[str] | None = None,
     advice: str = "",
 ) -> str:
-    parts = [f"### {title}", "", lead]
+    parts = [f"### {title}"]
+    if lead:
+        parts.extend(["", lead])
     if lines:
         parts.extend(["", "**过程**", ""])
         parts.extend(f"- {line}" for line in lines[-16:])
@@ -262,7 +259,6 @@ def result_status(report: dict[str, Any], lines: list[str], *, source: str, head
         f"{SOURCE_LABELS.get(source, source)} · {strategy} · {speed} 字／秒。"
         f"总预算 {totals.get('budget', 0)}，原文 {totals.get('chars_original', 0)}，"
         f"改后 {totals.get('chars_revised', 0)}，超 {totals.get('over_by', 0)}，欠 {totals.get('under_by', 0)}。"
-        "这些数字是本地脚本刚重算的。"
     )
     errors = list(report.get("errors") or [])
     warnings = list(report.get("warnings") or [])
@@ -282,20 +278,12 @@ HERO_HTML = """
 <header class="nf-hero">
   <p class="nf-kicker">创空间 · 口播</p>
   <h1>口播对轴改稿</h1>
-  <p class="nf-lede">成片时间已经定了，口播却对不齐画面。先按段写下要念的话，再选怎么改到能对着画面念完。</p>
-  <ol class="nf-flow">
-    <li><span>准备材料</span></li>
-    <li><span>选怎么改</span></li>
-    <li><span>改稿</span></li>
-    <li><span>对照下载</span></li>
-  </ol>
 </header>
 """.strip()
 
 
 FOOTER_HTML = """
 <footer class="nf-footer">
-  <p>创空间 · 口播对轴改稿。示例文案仅供演示。字数预算是检查值，不等于真实发声时长。不读视频，也不做配音。</p>
-  <p>推理只在点「开始改稿」时发生：<code>https://api-inference.modelscope.cn/v1</code> · <code>Qwen/Qwen3.5-35B-A3B</code>。令牌只读环境变量 <code>MODELSCOPE_API_TOKEN</code>，不会写进页面或代码。</p>
+  <p>创空间 · 口播对轴改稿</p>
 </footer>
 """.strip()

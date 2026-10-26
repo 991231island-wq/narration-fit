@@ -63,11 +63,11 @@ VIDEO_RELABEL_HEAD = """
 <script>
 (function () {
   const pairs = [
-    ["将视频文件拖放到此处以上传", "把视频拖到这里，只在本机播放"],
-    ["将视频拖放到此处", "把视频拖到这里，只在本机播放"],
+    ["将视频文件拖放到此处以上传", "把视频拖到这里"],
+    ["将视频拖放到此处", "把视频拖到这里"],
     ["点击上传", "选择本地视频"],
     ["Click to Upload", "选择本地视频"],
-    ["Drop Video Here", "把视频拖到这里，只在本机播放"],
+    ["Drop Video Here", "把视频拖到这里"],
     ["- or -", ""],
     ["- 或 -", ""]
   ];
@@ -103,9 +103,8 @@ VIDEO_RELABEL_HEAD = """
 
 EMPTY_OVERVIEW = """
 <section class="nf-overview">
-  <p class="nf-kicker">第 4 步 · 看结果</p>
   <h2>这次没有对照稿</h2>
-  <p>原因写在上面。点「再改一次」可以回去改材料或策略，已填的内容还在。</p>
+  <p>原因在上面。</p>
 </section>
 """.strip()
 
@@ -178,7 +177,7 @@ def _result_content(result, lines, *, status: str | None = None, segment_id: str
         status = result_status(result.report, lines, source=result.source)
     return {
         "rail": steps_html(phase, segment_id=segment_id or "", failed=failed, caption=caption),
-        "run_status": "这一轮已经结束。结果在第 4 步。",
+        "run_status": "已结束。",
         "result_md": status,
         "overview": overview_html(result.report, result.source),
         "table": table_rows(result.report),
@@ -196,14 +195,14 @@ def _result_content(result, lines, *, status: str | None = None, segment_id: str
 def _empty_result_content(status: str, *, phase: str, failed: bool, caption: str):
     return {
         "rail": steps_html(phase, failed=failed, caption=caption),
-        "run_status": "这一轮没有写出对照。原因在第 4 步。",
+        "run_status": "没有对照。",
         "result_md": status,
         "overview": EMPTY_OVERVIEW,
         "table": [],
         "segment": gr.update(choices=[], value=None),
         "revised": "",
         "original": "",
-        "meta": "这次没有分段结果。",
+        "meta": "没有分段。",
         "preview": EMPTY_DIFF,
         "html_file": None,
         "fit_file": None,
@@ -240,7 +239,7 @@ def go_step(target: int, state):
     dest = clamp_wizard_target(target, state["max_reached"])
     extra = ""
     if dest is None:
-        extra = "这一步还没解锁。先做完前面的步骤。"
+        extra = "还没解锁。"
     else:
         state["wizard_step"] = dest
     return view(state, extra=extra)
@@ -270,13 +269,13 @@ def go_next(state, title, active, start, end, visual, narration):
             note = f"{message} {readiness_note(state['segments'])}"
         return (
             *_editor_pack(state["segments"], state["active"]),
-            *view(state, extra="各段口播还没写齐。", content={"step1_note": note}),
+            *view(state, content={"step1_note": note}),
         )
     state["wizard_step"] = 2
     state["max_reached"] = max(state["max_reached"], 2)
     return (
         *_editor_pack(state["segments"], state["active"]),
-        *view(state, content={"step1_note": "分段和口播已记下。要改的话，点顶栏回到这一步。"}),
+        *view(state, content={"step1_note": "口播已记下。"}),
     )
 
 
@@ -287,11 +286,7 @@ def load_demo(state):
     state["segments"] = segments
     state["active"] = 0 if segments else None
     state["title"] = title
-    note = (
-        "示例《馒头为什么会胀起来》已分成 4 段，口播和时长都填好了。"
-        "这里不附视频文件，你可以另外选一个本地视频来对看。"
-        "这一步还不改稿。"
-    )
+    note = "示例已填好，4 段口播。"
     return (
         gr.update(value=None),
         0,
@@ -301,7 +296,7 @@ def load_demo(state):
         cps,
         must_keep,
         ratio,
-        *view(state, extra="示例已填入。", content={"step1_note": note}),
+        *view(state, content={"step1_note": note}),
     )
 
 
@@ -322,7 +317,6 @@ def run_job(
         state["wizard_step"] = 1
         yield view(
             state,
-            extra="各段口播还没写齐。",
             content={"step1_note": readiness_note(state["segments"])},
         )
         return
@@ -330,14 +324,14 @@ def run_job(
 
     state["wizard_step"] = 3
     state["max_reached"] = 3
-    lines.append("开始改稿。先对齐全文，再按段校验预算。")
+    lines.append("开始改稿。")
     yield view(
         state,
         content={
             "rail": steps_html("align", caption="进行中"),
             "run_status": status_block(
                 title="正在处理",
-                lead="对齐、校验和再校验都在本地完成。只有改写文字才会调用模型。",
+                lead="",
                 lines=lines,
             ),
         },
@@ -369,7 +363,7 @@ def run_job(
                         lines,
                         segment_id=segment_id,
                         phase="done",
-                        caption="改稿结束。数字以脚本重算为准。",
+                        caption="改稿结束。",
                     ),
                 )
                 return
@@ -381,7 +375,7 @@ def run_job(
                     "rail": steps_html(phase, segment_id=segment_id, caption="进行中"),
                     "run_status": status_block(
                         title="正在处理",
-                        lead="对齐、校验和再校验都在本地完成。只有改写文字才会调用模型。",
+                        lead="",
                         lines=lines,
                     ),
                 },
@@ -401,7 +395,7 @@ def run_job(
                 segment_id=segment_id,
                 phase="rewrite",
                 failed=True,
-                caption="改稿停在调用模型之前。",
+                caption="",
             ),
         )
     except Exception as exc:  # noqa: BLE001 — 页面只显示人话
@@ -441,11 +435,11 @@ def recheck(scope, state, segment_id, revised, strategy, chars_per_sec, must_kee
         info = humanize(exc)
         return view(state, content={"result_md": info.markdown()})
     if scope == "one":
-        line = f"已把 {segment_id} 的改后文案交给脚本重算。其它段的文字没动，也没有调用模型。"
+        line = f"已重算 {segment_id}。"
     elif segment_id:
-        line = f"已写入 {segment_id} 的改后文案，并按当前策略和语速重算全部段落。没有调用模型。"
+        line = f"已重算全部段落（写入了 {segment_id}）。"
     else:
-        line = "已按当前策略、语速和必留句重算全部段落。没有调用模型。"
+        line = "已重算全部段落。"
     status = result_status(
         result.report,
         [line],
@@ -461,7 +455,7 @@ def recheck(scope, state, segment_id, revised, strategy, chars_per_sec, must_kee
             status=status,
             segment_id=segment_id or "",
             phase="done",
-            caption="只跑了本地脚本。",
+            caption="",
         ),
     )
 
@@ -651,10 +645,6 @@ def build_ui() -> gr.Blocks:
                 '<div class="nf-step-head"><p class="nf-step-index">STEP 01</p><h2 class="nf-section">准备材料</h2></div>',
                 padding=False,
             )
-            gr.HTML(
-                '<p class="nf-note">先给每一段一个起止时间，再点开那段写下口播。视频只在这台电脑上播放，改稿不会把视频发给模型，只用各段口播和秒数。</p>',
-                padding=False,
-            )
             title_box = gr.Textbox(label="这条口播叫什么", placeholder="例如：馒头为什么会胀起来")
             clip = gr.Video(
                 label="本地视频（可选）",
@@ -663,15 +653,11 @@ def build_ui() -> gr.Blocks:
                 height=320,
                 elem_id="clip-video",
             )
-            gr.HTML(
-                '<p class="nf-note">选你电脑上的视频后，就在这里播放。不选也能改：自己填每段的起止秒即可。</p>',
-                padding=False,
-            )
             with gr.Row():
                 playhead = gr.Number(
                     value=0,
                     label="当前播放位置（秒）",
-                    info="点下面的按钮时，会改成视频正在播放的位置。没有视频时，就用你填的这个数。",
+                    info="无视频时填秒数。",
                     elem_id="playhead",
                     precision=2,
                     minimum=0,
@@ -690,7 +676,7 @@ def build_ui() -> gr.Blocks:
             with gr.Group(elem_classes=["nf-editor"]):
                 gr.HTML('<h2 class="nf-section nf-subhead">逐段写口播</h2>', padding=False)
                 gr.HTML(
-                    '<p class="nf-hint">点列表里的一行，或在下拉里选一段。写完点「保存这一段」。各段口播都写上，下一步才会亮。</p>',
+                    '<p class="nf-hint">点一行，写下口播，再保存。</p>',
                     padding=False,
                 )
                 seg_pick = gr.Dropdown(label="点开一段", choices=[], value=None, elem_id="seg-pick")
@@ -700,12 +686,12 @@ def build_ui() -> gr.Blocks:
                 seg_visual = gr.Textbox(
                     label="画面里有什么",
                     lines=2,
-                    placeholder="可选。不写也能进下一步，这段改稿时就少了画面信息。",
+                    placeholder="可选",
                 )
                 seg_narration = gr.Textbox(
                     label="这一段的口播",
                     lines=4,
-                    placeholder="只写这一段要念的话，不要把整篇稿子贴在这里。",
+                    placeholder="这一段要念的话",
                 )
                 with gr.Row():
                     btn_save = gr.Button("保存这一段", variant="secondary")
@@ -713,27 +699,21 @@ def build_ui() -> gr.Blocks:
             with gr.Row():
                 btn_demo = gr.Button("一键演示", variant="secondary")
                 btn_next = gr.Button("下一步", variant="primary", interactive=False)
-            step1_note = gr.Markdown("还没有分段。可以选本地视频打点，或点「一键演示」看填好的示例。")
+            step1_note = gr.Markdown("还没有分段。")
 
         with gr.Group(visible=False, elem_id="step-2", elem_classes=["nf-step-panel"]) as panel2:
             gr.HTML(
                 '<div class="nf-step-head"><p class="nf-step-index">STEP 02</p><h2 class="nf-section">选怎么改</h2></div>',
                 padding=False,
             )
-            gr.HTML(
-                '<p class="nf-note">策略决定怎么改字。语速决定每段预算。脚本按你填的数字算，不会改它。</p>',
-                padding=False,
-            )
             strategy = gr.Radio(
                 choices=["trim", "keep_faster", "expand"],
                 value="trim",
                 label="策略",
-                info="trim 删到能念完。keep_faster 用你接受的更快语速尽量留字。expand 在预算内把偏短的段补上。",
             )
             chars_per_sec = gr.Number(
                 value=4.7,
                 label="语速（字／秒）",
-                info="舒适档可参考 4.7，加快档可参考 5.5。",
                 minimum=0.1,
                 maximum=6.0,
                 step=0.1,
@@ -741,12 +721,11 @@ def build_ui() -> gr.Blocks:
             must_keep = gr.Textbox(
                 label="必留句",
                 lines=3,
-                info="每行一句，可选。该句必须整句留在同一段的改后文案里。",
+                placeholder="每行一句，可选",
             )
             expand_short_ratio = gr.Number(
                 value=0.7,
                 label="expand 偏短阈值",
-                info="原文少于预算乘这个比例时，expand 会考虑补写。常用 0.7。",
                 minimum=0.1,
                 maximum=1.0,
                 step=0.05,
@@ -760,12 +739,8 @@ def build_ui() -> gr.Blocks:
                 '<div class="nf-step-head"><p class="nf-step-index">STEP 03</p><h2 class="nf-section">改稿</h2></div>',
                 padding=False,
             )
-            gr.HTML(
-                '<p class="nf-note">顺序是对齐、校验、改稿、再校验。跑完会自动进入「对照下载」，成功和失败都会进。</p>',
-                padding=False,
-            )
-            rail = gr.HTML(steps_html("idle", caption="还没开始。"), padding=False, elem_id="steps")
-            run_status = gr.Markdown("点第 2 步的「开始改稿」后，进度会出现在这里。", elem_id="run-status")
+            rail = gr.HTML(steps_html("idle", caption=""), padding=False, elem_id="steps")
+            run_status = gr.Markdown("", elem_id="run-status")
 
         with gr.Group(visible=False, elem_id="step-4", elem_classes=["nf-step-panel"]) as panel4:
             gr.HTML(
@@ -774,10 +749,6 @@ def build_ui() -> gr.Blocks:
             )
             result_md = gr.Markdown("")
             overview = gr.HTML(EMPTY_OVERVIEW, padding=False, elem_id="overview")
-            gr.HTML(
-                '<p class="nf-note">表里只留段、时长和超欠。逐字差异在下面的对照里。</p>',
-                padding=False,
-            )
             table = gr.Dataframe(
                 value=[],
                 headers=TABLE_HEADERS,
@@ -790,12 +761,8 @@ def build_ui() -> gr.Blocks:
             )
             with gr.Group(elem_classes=["nf-editor"]):
                 gr.HTML('<h2 class="nf-section nf-subhead">改一段，立刻重验</h2>', padding=False)
-                gr.HTML(
-                    '<p class="nf-hint">只改「改后」。重验此段或全部都只跑本地脚本，不调用模型。换段之前先重验。</p>',
-                    padding=False,
-                )
                 segment = gr.Dropdown(choices=[], label="选择段落", interactive=True)
-                meta = gr.Markdown("改稿跑完后，在这里选一段。")
+                meta = gr.Markdown("选一段。")
                 with gr.Row():
                     original = gr.Textbox(label="原文", lines=5, interactive=False)
                     revised = gr.Textbox(label="改后", lines=5)
@@ -803,16 +770,11 @@ def build_ui() -> gr.Blocks:
                     btn_one = gr.Button("重验此段", variant="primary")
                     btn_all = gr.Button("重验全部", variant="secondary")
             gr.HTML('<h2 class="nf-section nf-subhead">对照预览</h2>', padding=False)
-            gr.HTML(
-                '<p class="nf-note">删除线是拿掉的字，绿色底是新增的字。下载的 diff.html 用同一份渲染。</p>',
-                padding=False,
-            )
             preview = gr.HTML(EMPTY_DIFF, padding=False, elem_id="diff-preview")
             with gr.Row():
                 out_html = gr.File(label="下载 diff.html", interactive=False)
                 out_fit = gr.File(label="下载 fit.json", interactive=False)
                 out_report = gr.File(label="下载 validation-report.md", interactive=False)
-            gr.HTML('<p class="nf-note">再改一次会保留已经填好的材料和策略。</p>', padding=False)
             with gr.Row():
                 btn_again_materials = gr.Button("再改一次：改材料", variant="secondary")
                 btn_again_strategy = gr.Button("再改一次：选怎么改", variant="primary")

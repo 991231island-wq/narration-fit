@@ -101,13 +101,13 @@ def advice_for_report(errors: list[str], *, strategy: str) -> str:
         return "还有句子没划进任何段。把它们写进某一段，或确认不要之后清空未分配，再重验。不要为了过关把超预算的句子丢进未分配。"
     if "超预算" in text or "超过上限" in text:
         if strategy == "trim":
-            return "trim 锁死当前语速，不会自动加快。把超预算的段再删短，然后点「重验此段」。这一步只跑本地脚本。"
+            return "trim 锁死当前语速，不会自动加快。把超预算的段再删短，然后点「重验此段」。"
         if strategy == "keep_faster":
             return "可以再删超出来的字，或把语速调高（不要超过上限）后点「重验全部」。加快只按你填的数字算，脚本不会偷偷加。"
         return "expand 也不能超过预算。超了的段先删回预算内，偏短的段再补画面里看得到的信息，然后重验。"
     if "仍偏短" in text:
         return "欠预算本身不会失败。若希望补满，用 expand 改这一段；只是想确认数字，点「重验全部」即可。"
-    return "按问题列表改对应段的文案，再点「重验此段」或「重验全部」。重验不调用模型。"
+    return "按问题列表改对应段的文案，再点「重验此段」或「重验全部」。"
 
 
 def humanize(exc: BaseException) -> HumanError:

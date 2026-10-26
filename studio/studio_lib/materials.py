@@ -55,8 +55,7 @@ def overlap_message(segments: list[dict[str, Any]]) -> str:
         if float(current["start_s"]) < float(previous["end_s"]) - 0.001:
             return (
                 f"{_fmt(previous['start_s'])}–{_fmt(previous['end_s'])} 秒和 "
-                f"{_fmt(current['start_s'])}–{_fmt(current['end_s'])} 秒叠在一起了。"
-                "首尾相接可以，重叠不行。"
+                f"{_fmt(current['start_s'])}–{_fmt(current['end_s'])} 秒重叠了。"
             )
     return ""
 
@@ -73,9 +72,9 @@ def add_cut(segments: list[dict[str, Any]] | None, playhead: Any) -> tuple[list[
     moment = parse_seconds(playhead)
     current = _copy(segments)
     if moment is None:
-        return current, None, "播放位置要是大于 0 的秒数。可以先播放，或自己填「当前播放位置」。"
+        return current, None, "播放位置要是大于 0 的秒数。"
     if moment <= 0:
-        return current, None, "先把播放头拖过 0 秒，或在「当前播放位置」里填一个大于 0 的秒数。"
+        return current, None, "先填一个大于 0 的秒数。"
 
     for index, row in enumerate(current):
         start = float(row["start_s"])
@@ -95,7 +94,7 @@ def add_cut(segments: list[dict[str, Any]] | None, playhead: Any) -> tuple[list[
             current[index : index + 1] = [left, right]
             current = sort_segments(current)
             active = _index_of(current, moment, end)
-            return current, active, f"已在 { _fmt(moment) } 秒把这段切开。新的一段口播还空着。"
+            return current, active, f"已在 {_fmt(moment)} 秒切开。"
 
     if not current:
         current = [
@@ -107,7 +106,7 @@ def add_cut(segments: list[dict[str, Any]] | None, playhead: Any) -> tuple[list[
                 "label": "",
             }
         ]
-        return current, 0, f"已加上第 1 段：0–{_fmt(moment)} 秒。点开它，写下这一段口播。"
+        return current, 0, f"已加上第 1 段：0–{_fmt(moment)} 秒。"
 
     last_end = max(float(row["end_s"]) for row in current)
     if moment > last_end + 0.049:
@@ -122,9 +121,9 @@ def add_cut(segments: list[dict[str, Any]] | None, playhead: Any) -> tuple[list[
         )
         current = sort_segments(current)
         active = _index_of(current, last_end, moment)
-        return current, active, f"已加上一段：{_fmt(last_end)}–{_fmt(moment)} 秒。写下这一段口播后再进下一步。"
+        return current, active, f"已加上一段：{_fmt(last_end)}–{_fmt(moment)} 秒。"
 
-    return current, None, "这个时间没有落在可以切开的位置。可以直接改下面的起止秒。"
+    return current, None, "这个时间切不开。直接改起止秒。"
 
 
 def apply_editor(
@@ -212,14 +211,14 @@ def segments_ready(segments: list[dict[str, Any]] | None) -> bool:
 def readiness_note(segments: list[dict[str, Any]] | None) -> str:
     rows = _copy(segments)
     if not rows:
-        return "还没有分段。播放到要切开的位置，点「在当前播放位置添加分段点」。也可以自己填起止秒，再点「保存这一段」。"
+        return "还没有分段。"
     problem = overlap_message(rows)
     if problem:
         return problem
     missing = [str(index) for index, row in enumerate(rows, start=1) if not row["narration"].strip()]
     if missing:
-        return "这几段还没写口播：" + "、".join(f"第 {item} 段" for item in missing) + "。写齐后才能去选怎么改。"
-    return "各段口播都写好了。点「下一步」去选怎么改。这一步还不改稿。"
+        return "还没写口播：" + "、".join(f"第 {item} 段" for item in missing) + "。"
+    return "口播已齐。"
 
 
 def segment_table(segments: list[dict[str, Any]] | None) -> list[list[str]]:

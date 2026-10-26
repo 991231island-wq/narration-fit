@@ -35,6 +35,7 @@ from studio_lib.materials import (  # noqa: E402
     segments_ready,
 )
 from studio_lib.present import (  # noqa: E402
+    FOOTER_HTML,
     HERO_HTML,
     clamp_wizard_target,
     diff_preview,
@@ -189,12 +190,10 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertTrue(
             segments_ready([{"start_s": 0, "end_s": 4, "narration": "有口播", "visual": "", "label": ""}])
         )
-        self.assertIn("第 1 步", wizard_caption(1))
-        self.assertIn("下一步", wizard_caption(1))
-        self.assertIn("选怎么改", wizard_caption(2))
-        self.assertIn("开始改稿", wizard_caption(2))
-        self.assertIn("对照下载", wizard_caption(4))
-        self.assertIn("第 4 步", wizard_caption(4))
+        self.assertEqual(wizard_caption(1), "")
+        self.assertEqual(wizard_caption(2), "")
+        self.assertEqual(wizard_caption(4), "")
+        self.assertEqual(wizard_caption(4, "还没解锁。"), "还没解锁。")
         idle = steps_html("idle", caption="还没开始。")
         self.assertNotIn('class="active"', idle)
         self.assertIn("还没开始", idle)
@@ -209,13 +208,17 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertEqual(demo_state["max_reached"], 1)
         self.assertEqual(len(demo_state["segments"]), 4)
         self.assertTrue(all(row["narration"].strip() for row in demo_state["segments"]))
-        self.assertIn("还不改稿", filled[-2])
+        self.assertIn("4 段", filled[-2])
+        self.assertNotIn("还不改稿", filled[-2])
         self.assertTrue(filled[9].get("interactive"))
-        self.assertNotIn("时间轴 JSON", (STUDIO / "app.py").read_text(encoding="utf-8"))
+        app_source = (STUDIO / "app.py").read_text(encoding="utf-8")
+        self.assertNotIn("时间轴 JSON", app_source)
+        self.assertNotIn("口播全文", app_source)
 
         blocked = studio_app.go_next(state, "", None, None, None, "", "")
         self.assertEqual(blocked[-1]["wizard_step"], 1)
-        self.assertIn("第 1 步", blocked[11])
+        self.assertEqual(blocked[11], "")
+        self.assertIn("还没有分段", blocked[-2])
 
         first = demo_state["segments"][0]
         advanced = studio_app.go_next(
@@ -251,8 +254,9 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertGreaterEqual(len(events), 2)
         self.assertEqual(events[0][-1]["wizard_step"], 3)
         self.assertEqual(events[0][-1]["max_reached"], 3)
-        self.assertIn("第 3 步", events[0][4])
+        self.assertEqual(events[0][4], "")
         self.assertIn("对齐", events[0][9])
+        self.assertNotIn("只有改写", events[0][10])
         self.assertEqual(events[-1][-1]["wizard_step"], 4)
         self.assertEqual(events[-1][-1]["max_reached"], 4)
         self.assertIn("还不能调用模型", events[-1][11])
@@ -271,7 +275,9 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertIn("MODELSCOPE_API_TOKEN", align_text)
         self.assertIn("Qwen/Qwen3.5-35B-A3B", align_text)
         self.assertIn("https://api-inference.modelscope.cn/v1", align_text)
-        self.assertIn("Qwen/Qwen3.5-35B-A3B", present_text)
+        self.assertNotIn("Qwen/Qwen3.5-35B-A3B", present_text)
+        self.assertNotIn("api-inference.modelscope.cn", present_text)
+        self.assertNotIn("MODELSCOPE_API_TOKEN", present_text)
 
     def test_studio_theme_uses_brand_tokens(self):
         css = (STUDIO / "theme.css").read_text(encoding="utf-8")
@@ -291,10 +297,14 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertNotIn("#efe6d6", css)
         self.assertNotIn("#9a5322", css)
         self.assertIn("nf-hero", HERO_HTML)
-        self.assertIn("准备材料", HERO_HTML)
-        self.assertIn("选怎么改", HERO_HTML)
-        self.assertIn("对照下载", HERO_HTML)
+        self.assertIn("口播对轴改稿", HERO_HTML)
+        self.assertNotIn("nf-lede", HERO_HTML)
+        self.assertNotIn("nf-flow", HERO_HTML)
+        self.assertNotIn("准备材料", HERO_HTML)
         self.assertNotIn("时间轴稿", HERO_HTML)
+        self.assertIn("口播对轴改稿", FOOTER_HTML)
+        self.assertNotIn("MODELSCOPE_API_TOKEN", FOOTER_HTML)
+        self.assertNotIn("api-inference", FOOTER_HTML)
         app_text = (STUDIO / "app.py").read_text(encoding="utf-8")
         self.assertIn("STEP 01", app_text)
         self.assertIn("STEP 04", app_text)
