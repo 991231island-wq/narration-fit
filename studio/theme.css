@@ -276,6 +276,49 @@ button.primary:hover,
   font-size: 12px;
 }
 
+.nf-wizard {
+  gap: 8px !important;
+  margin: 4px 0 8px !important;
+}
+
+.nf-wizard button {
+  min-height: 54px;
+  border-radius: 14px !important;
+  font-weight: 650;
+  white-space: normal !important;
+  line-height: 1.25;
+}
+
+.nf-wizard button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+#wizard-hint {
+  border: 1px solid #e4d5c0 !important;
+  border-radius: 14px !important;
+  background: #fffdf8 !important;
+  padding: 8px 14px !important;
+  margin-bottom: 12px !important;
+}
+
+#wizard-hint p {
+  margin: 0;
+  font-size: 15px;
+}
+
+.nf-step-panel {
+  border: 1px solid #e4d5c0 !important;
+  border-radius: 18px !important;
+  background: #fffdf8 !important;
+  padding: 8px 16px 16px !important;
+  margin-bottom: 16px !important;
+}
+
+.nf-step-panel .nf-section {
+  margin-top: 8px;
+}
+
 /* —— 内嵌 diff.html 正文 —— */
 #nf-diff {
   background: #f3efe4;

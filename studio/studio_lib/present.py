@@ -115,7 +115,10 @@ def steps_html(
     if phase == "rewrite" and segment_id:
         labels["rewrite"] = f"改稿 · {segment_id}"
 
-    if phase == "done":
+    if phase == "idle":
+        reached = -1
+        active = ""
+    elif phase == "done":
         reached = len(STEP_ORDER)
         active = ""
     else:
@@ -139,6 +142,11 @@ def steps_html(
     return f'<ol class="nf-rail">{"".join(items)}</ol>{note}'
 
 
+EMPTY_DIFF = (
+    '<div id="nf-diff"><p class="empty">对照会在改稿结束后出现在这里。</p></div>'
+)
+
+
 def diff_preview(page: str) -> str:
     """嵌入 render_diff 生成的对照页正文。样式由工作室 CSS 画在 #nf-diff 里。"""
     start = page.find("<main")
@@ -150,10 +158,43 @@ def diff_preview(page: str) -> str:
     return f'<div id="nf-diff">{body}</div>'
 
 
+WIZARD_STEPS = (
+    (1, "准备材料", "填好时间轴和口播，点「下一步」。"),
+    (2, "怎么改", "选好策略和语速，点「开始改稿」。"),
+    (3, "改稿中", "正在对齐、校验和改稿，结束后会自动打开第 4 步。"),
+    (4, "看结果", "看总览和对照。要重跑，点「再改一次」。"),
+)
+
+
+def clamp_wizard_target(target: int, max_reached: int) -> int | None:
+    """未完成的步骤不能跳。能去才返回步号。"""
+    try:
+        step = int(target)
+        unlocked = int(max_reached)
+    except (TypeError, ValueError):
+        return None
+    if step < 1 or step > 4 or step > unlocked:
+        return None
+    return step
+
+
+def materials_present(timeline: str, draft: str) -> bool:
+    return bool((timeline or "").strip()) and bool((draft or "").strip())
+
+
+def wizard_caption(step: int, extra: str = "") -> str:
+    step = min(4, max(1, int(step)))
+    _, name, action = WIZARD_STEPS[step - 1]
+    text = f"现在是第 {step} 步，共 4 步 · {name}。{action}"
+    if extra:
+        text = f"{text} {extra}"
+    return text
+
+
 def segment_fields(state: dict[str, Any] | None, segment_id: str | None) -> tuple[str, str, str]:
     """返回 revised、original、给编辑区看的一行说明。"""
     if not state or not segment_id:
-        return "", "", "先跑一键演示或开始改稿，再选择段落。"
+        return "", "", "改稿跑完后，在这里选一段改「改后」，再重验。"
     report = state.get("report") or {}
     fit = state.get("fit") or {}
     row = None
@@ -243,9 +284,10 @@ HERO_HTML = """
   <h1>口播对轴改稿</h1>
   <p class="nf-lede">成片时间轴已经定了。按你选的语速给每段一个字数预算，把现有口播改到能对着画面念完。模型只改文字，超不超只认本地脚本。</p>
   <ul class="nf-points">
-    <li>预算按段时长 × 字／秒，脚本重算</li>
-    <li>改完可以只改一段，立刻重验</li>
-    <li>没有令牌也能先看预置通过结果</li>
+    <li>1 准备材料</li>
+    <li>2 怎么改</li>
+    <li>3 改稿中</li>
+    <li>4 看结果</li>
   </ul>
 </header>
 """.strip()

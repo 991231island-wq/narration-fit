@@ -28,7 +28,15 @@ from studio_lib.pipeline import (  # noqa: E402
     revalidate,
     run_pipeline,
 )
-from studio_lib.present import diff_preview, overview_html, steps_html, table_rows  # noqa: E402
+from studio_lib.present import (  # noqa: E402
+    clamp_wizard_target,
+    diff_preview,
+    materials_present,
+    overview_html,
+    steps_html,
+    table_rows,
+    wizard_caption,
+)
 
 
 class StudioDryRunTests(unittest.TestCase):
@@ -162,6 +170,78 @@ class StudioDryRunTests(unittest.TestCase):
             else:
                 os.environ[TOKEN_ENV] = previous
         self.assertNotIn("supersecretvalue", cleaned)
+
+    def test_wizard_blocks_unfinished_steps(self):
+        self.assertEqual(clamp_wizard_target(1, 1), 1)
+        self.assertIsNone(clamp_wizard_target(2, 1))
+        self.assertIsNone(clamp_wizard_target(4, 1))
+        self.assertEqual(clamp_wizard_target(1, 4), 1)
+        self.assertEqual(clamp_wizard_target(4, 4), 4)
+        self.assertIsNone(clamp_wizard_target(0, 4))
+        self.assertFalse(materials_present("", "有口播"))
+        self.assertFalse(materials_present("  { }  ", "   "))
+        self.assertTrue(materials_present("{ }", "口播"))
+        self.assertIn("第 1 步", wizard_caption(1))
+        self.assertIn("下一步", wizard_caption(1))
+        self.assertIn("开始改稿", wizard_caption(2))
+        self.assertIn("第 4 步", wizard_caption(4))
+        idle = steps_html("idle", caption="还没开始。")
+        self.assertNotIn('class="active"', idle)
+        self.assertIn("还没开始", idle)
+
+    def test_wizard_demo_stays_on_step_one_and_missing_token_lands_on_step_four(self):
+        import app as studio_app
+
+        state = {"wizard_step": 1, "max_reached": 1}
+        filled = studio_app.load_demo(state)
+        timeline_text, draft_text = filled[1], filled[3]
+        self.assertIn("segments", timeline_text)
+        self.assertTrue(draft_text.strip())
+        self.assertEqual(filled[-1]["wizard_step"], 1)
+        self.assertEqual(filled[-1]["max_reached"], 1)
+        self.assertIn("还不展示改稿结果", filled[-2])
+        self.assertTrue(filled[8].get("interactive"))
+
+        blocked = studio_app.go_next({"wizard_step": 1, "max_reached": 1}, "", "", None, None)
+        self.assertEqual(blocked[-1]["wizard_step"], 1)
+        self.assertIn("都要有内容", blocked[4])
+
+        advanced = studio_app.go_next(filled[-1], timeline_text, draft_text, None, None)
+        self.assertEqual(advanced[-1]["wizard_step"], 2)
+        self.assertGreaterEqual(advanced[-1]["max_reached"], 2)
+        locked = studio_app.go_step(4, advanced[-1])
+        self.assertEqual(locked[-1]["wizard_step"], 2)
+        self.assertIn("还没解锁", locked[4])
+
+        previous = os.environ.pop(TOKEN_ENV, None)
+        try:
+            events = list(
+                studio_app.run_job(
+                    advanced[-1],
+                    None,
+                    timeline_text,
+                    None,
+                    draft_text,
+                    filled[4],
+                    filled[5],
+                    filled[6],
+                    filled[7],
+                )
+            )
+        finally:
+            if previous is not None:
+                os.environ[TOKEN_ENV] = previous
+        self.assertGreaterEqual(len(events), 2)
+        self.assertEqual(events[0][-1]["wizard_step"], 3)
+        self.assertEqual(events[0][-1]["max_reached"], 3)
+        self.assertIn("第 3 步", events[0][4])
+        self.assertIn("对齐", events[0][9])
+        self.assertEqual(events[-1][-1]["wizard_step"], 4)
+        self.assertEqual(events[-1][-1]["max_reached"], 4)
+        self.assertIn("还不能调用模型", events[-1][11])
+        self.assertIn("MODELSCOPE_API_TOKEN", events[-1][11])
+        self.assertNotIn("Traceback", events[-1][11])
+        self.assertIn("结果总览", events[-1][12])
 
     def test_sources_do_not_embed_a_token(self):
         app_text = (STUDIO / "app.py").read_text(encoding="utf-8")
