@@ -300,6 +300,8 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertIn("appearance:textfield", compact)
         self.assertIn(".block.hide-container", css)
         self.assertIn('textarea[rows="1"]', css)
+        self.assertIn(".nf-step-panel .styler", css)
+        self.assertIn("--block-title-background-fill:transparent", compact)
         self.assertIn("nf-hero", HERO_HTML)
         self.assertIn("口播对轴改稿", HERO_HTML)
         self.assertNotIn("nf-lede", HERO_HTML)

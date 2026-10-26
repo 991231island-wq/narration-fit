@@ -41,6 +41,9 @@
   --body-text-color: var(--ck-text) !important;
   --block-label-text-color: var(--ck-text-soft) !important;
   --block-title-text-color: var(--ck-text) !important;
+  --block-title-background-fill: transparent !important;
+  --block-title-border-color: transparent !important;
+  --block-title-border-width: 0px !important;
   --input-background-fill: var(--ck-surface) !important;
   --border-color-primary: var(--ck-border) !important;
 }
@@ -348,7 +351,7 @@ body,
 .nf-editor {
   border: 1px solid var(--ck-border) !important;
   border-radius: var(--ck-radius-card) !important;
-  background: var(--ck-surface-soft) !important;
+  background: var(--ck-surface) !important;
   box-shadow: none !important;
   padding: 12px 14px 14px !important;
   margin-top: 8px !important;
@@ -425,6 +428,25 @@ button.secondary:hover,
   box-shadow: var(--ck-card-shadow) !important;
   padding: 18px 22px 20px !important;
   margin-bottom: 16px !important;
+}
+
+/* Gradio 的 Group / Form 用 --block-border-color 当底，缝隙和透明的
+   HTML 标题、矮按钮旁边就会露出浅灰横条。卡片里改回白底。 */
+.nf-step-panel .styler,
+.nf-step-panel .form,
+.nf-editor .styler {
+  background: var(--ck-surface) !important;
+  border-color: transparent !important;
+}
+
+.nf-step-panel .row {
+  align-items: flex-end;
+}
+
+.nf-step-panel [data-testid="block-info"] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* —— 内嵌 diff.html。只改工作室里的呈现，不改渲染脚本。 —— */
