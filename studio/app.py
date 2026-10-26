@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """口播对轴改稿 · 本地 Gradio 工作室。
 
-四步向导：准备材料 → 怎么改 → 改稿中 → 看结果。
+四步向导：准备材料 → 选怎么改 → 改稿 → 对照下载。
 在仓库根目录启动：python studio/app.py
 监听 0.0.0.0:7860。令牌只读环境变量 MODELSCOPE_API_TOKEN。
 """
@@ -22,10 +22,21 @@ if str(STUDIO_DIR) not in sys.path:
 import gradio as gr
 
 from studio_lib.errors import humanize
+from studio_lib.materials import (
+    add_cut,
+    apply_editor,
+    delete_segment,
+    editor_values,
+    example_materials,
+    readiness_note,
+    segment_choices,
+    segment_table,
+    segments_ready,
+    build_job_inputs,
+)
 from studio_lib.pipeline import (
     InputError,
     RewritesBlocked,
-    load_example_inputs,
     revalidate,
     stream_pipeline,
 )
@@ -36,7 +47,6 @@ from studio_lib.present import (
     TABLE_HEADERS,
     clamp_wizard_target,
     diff_preview,
-    materials_present,
     overview_html,
     result_status,
     segment_fields,
@@ -49,6 +59,48 @@ from studio_lib.present import (
 
 THEME_PATH = STUDIO_DIR / "theme.css"
 
+VIDEO_RELABEL_HEAD = """
+<script>
+(function () {
+  const pairs = [
+    ["将视频文件拖放到此处以上传", "把视频拖到这里，只在本机播放"],
+    ["将视频拖放到此处", "把视频拖到这里，只在本机播放"],
+    ["点击上传", "选择本地视频"],
+    ["Click to Upload", "选择本地视频"],
+    ["Drop Video Here", "把视频拖到这里，只在本机播放"],
+    ["- or -", ""],
+    ["- 或 -", ""]
+  ];
+  function relabel() {
+    const root = document.getElementById("clip-video");
+    if (!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      let text = node.textContent;
+      for (const pair of pairs) {
+        if (text.includes(pair[0])) text = text.split(pair[0]).join(pair[1]);
+      }
+      const trimmed = text.trim();
+      if (trimmed === "or" || trimmed === "-" || trimmed === "或") text = "";
+      if (text !== node.textContent) node.textContent = text;
+    }
+  }
+  function start() {
+    relabel();
+    new MutationObserver(relabel).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+"""
+
 EMPTY_OVERVIEW = """
 <section class="nf-overview">
   <p class="nf-kicker">第 4 步 · 看结果</p>
@@ -58,39 +110,14 @@ EMPTY_OVERVIEW = """
 """.strip()
 
 
-def _read_upload(file_obj: Any) -> str:
-    if file_obj is None:
-        return ""
-    if isinstance(file_obj, (list, tuple)):
-        file_obj = file_obj[0] if file_obj else None
-    if file_obj is None:
-        return ""
-    path = file_obj if isinstance(file_obj, str) else getattr(file_obj, "name", "")
-    if not path:
-        return ""
-    file_path = Path(path)
-    if not file_path.is_file():
-        raise InputError("上传的文件读不到。请重新选择，或把内容贴到文本框。")
-    data = file_path.read_bytes()
-    if data.startswith(b"\xef\xbb\xbf"):
-        data = data[3:]
-    try:
-        return data.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise InputError("文件不是 UTF-8。请用 UTF-8 另存后再上传，或直接粘贴文本。") from exc
-
-
-def _choose_text(typed: str, uploaded: Any) -> str:
-    text = (typed or "").strip()
-    if text:
-        return text
-    return _read_upload(uploaded).strip()
-
-
 def _fresh_state(state: dict | None) -> dict:
     data = dict(state or {})
     data["wizard_step"] = int(data.get("wizard_step") or 1)
     data["max_reached"] = int(data.get("max_reached") or 1)
+    data["segments"] = list(data.get("segments") or [])
+    data["title"] = str(data.get("title") or "")
+    active = data.get("active")
+    data["active"] = None if active is None or active == "" else active
     return data
 
 
@@ -188,7 +215,24 @@ def _remember(state: dict, result) -> dict:
     data = result.state()
     data["wizard_step"] = state["wizard_step"]
     data["max_reached"] = state["max_reached"]
+    data["segments"] = state.get("segments") or []
+    data["active"] = state.get("active")
+    data["title"] = state.get("title") or ""
     return data
+
+
+def _editor_pack(segments, active):
+    start, end, visual, narration = editor_values(segments, active)
+    value = None if active is None or not segments else str(int(active))
+    return (
+        segment_table(segments),
+        gr.update(choices=segment_choices(segments), value=value),
+        start,
+        end,
+        visual,
+        narration,
+        gr.update(interactive=segments_ready(segments)),
+    )
 
 
 def go_step(target: int, state):
@@ -208,88 +252,81 @@ def go_back(state):
     return view(state)
 
 
-def go_next(state, timeline_text, draft_text, timeline_file, draft_file):
+def _commit(state, title, active, start, end, visual, narration):
     state = _fresh_state(state)
-    try:
-        timeline = _choose_text(timeline_text, timeline_file)
-        draft = _choose_text(draft_text, draft_file)
-    except InputError as exc:
-        info = humanize(exc)
+    state["title"] = (title or "").strip()
+    segments, new_active, message = apply_editor(state["segments"], active, start, end, visual, narration)
+    state["segments"] = segments
+    state["active"] = new_active
+    return state, message
+
+
+def go_next(state, title, active, start, end, visual, narration):
+    state, message = _commit(state, title, active, start, end, visual, narration)
+    if not segments_ready(state["segments"]):
         state["wizard_step"] = 1
-        return view(state, extra="材料还读不了。", content={"step1_note": info.markdown()})
-    if not materials_present(timeline, draft):
-        state["wizard_step"] = 1
-        return view(
-            state,
-            extra="时间轴和口播都要有内容。",
-            content={"step1_note": "先粘贴或上传时间轴和口播，也可以点「一键演示」。"},
+        note = message or readiness_note(state["segments"])
+        if message and message not in note:
+            note = f"{message} {readiness_note(state['segments'])}"
+        return (
+            *_editor_pack(state["segments"], state["active"]),
+            *view(state, extra="各段口播还没写齐。", content={"step1_note": note}),
         )
     state["wizard_step"] = 2
     state["max_reached"] = max(state["max_reached"], 2)
-    return view(state, content={"step1_note": "材料已记下。要改的话，点顶栏回到这一步。"})
-
-
-def toggle_next(timeline_text, draft_text, timeline_file, draft_file):
-    try:
-        ready = materials_present(
-            _choose_text(timeline_text, timeline_file),
-            _choose_text(draft_text, draft_file),
-        )
-    except InputError:
-        ready = False
-    return gr.update(interactive=ready)
+    return (
+        *_editor_pack(state["segments"], state["active"]),
+        *view(state, content={"step1_note": "分段和口播已记下。要改的话，点顶栏回到这一步。"}),
+    )
 
 
 def load_demo(state):
-    timeline_text, draft_text, strategy, cps, must_keep, ratio = load_example_inputs()
+    title, segments, strategy, cps, must_keep, ratio = example_materials()
     state = _fresh_state(state)
     state["wizard_step"] = 1
-    note = "示例《馒头为什么会胀起来》已填入。检查材料后点「下一步」。这一步还不展示改稿结果。"
+    state["segments"] = segments
+    state["active"] = 0 if segments else None
+    state["title"] = title
+    note = (
+        "示例《馒头为什么会胀起来》已分成 4 段，口播和时长都填好了。"
+        "这里不附视频文件，你可以另外选一个本地视频来对看。"
+        "这一步还不改稿。"
+    )
     return (
-        None,
-        timeline_text,
-        None,
-        draft_text,
+        gr.update(value=None),
+        0,
+        title,
+        *_editor_pack(segments, state["active"]),
         strategy,
         cps,
         must_keep,
         ratio,
-        gr.update(interactive=True),
         *view(state, extra="示例已填入。", content={"step1_note": note}),
     )
 
 
 def run_job(
     state,
-    timeline_file,
-    timeline_text,
-    draft_file,
-    draft_text,
+    title,
     strategy,
     chars_per_sec,
     must_keep,
     expand_short_ratio,
 ):
     state = _fresh_state(state)
+    state["title"] = (title or "").strip()
     lines: list[str] = []
     phase = "align"
     segment_id = ""
-    try:
-        timeline = _choose_text(timeline_text, timeline_file)
-        draft = _choose_text(draft_text, draft_file)
-    except InputError as exc:
-        info = humanize(exc)
-        state["wizard_step"] = 1
-        yield view(state, extra="材料还读不了。", content={"step1_note": info.markdown()})
-        return
-    if not materials_present(timeline, draft):
+    if not segments_ready(state["segments"]):
         state["wizard_step"] = 1
         yield view(
             state,
-            extra="时间轴和口播都要有内容。",
-            content={"step1_note": "先回到第 1 步把材料补齐。"},
+            extra="各段口播还没写齐。",
+            content={"step1_note": readiness_note(state["segments"])},
         )
         return
+    timeline, draft = build_job_inputs(state["title"], state["segments"])
 
     state["wizard_step"] = 3
     state["max_reached"] = 3
@@ -434,6 +471,80 @@ def on_pick(segment_id, state):
     return revised, original, meta
 
 
+MARK_JS = """
+(playhead, session) => {
+  const video = document.querySelector("#clip-video video");
+  let t = Number(playhead);
+  if (!Number.isFinite(t)) t = 0;
+  if (video && Number.isFinite(video.currentTime) && video.currentTime > 0.05) {
+    t = video.currentTime;
+  }
+  return [Math.round(t * 100) / 100, session];
+}
+"""
+
+
+def on_add_mark(playhead, state):
+    state = _fresh_state(state)
+    segments, active, message = add_cut(state["segments"], playhead)
+    state["segments"] = segments
+    state["active"] = active
+    try:
+        shown = round(float(playhead), 2)
+    except (TypeError, ValueError):
+        shown = 0
+    return (
+        shown,
+        *_editor_pack(segments, active),
+        *view(state, content={"step1_note": message}),
+    )
+
+
+def on_save_segment(state, title, active, start, end, visual, narration):
+    state, message = _commit(state, title, active, start, end, visual, narration)
+    note = message or readiness_note(state["segments"])
+    if message and readiness_note(state["segments"]) not in message:
+        note = f"{message} {readiness_note(state['segments'])}"
+    return (
+        *_editor_pack(state["segments"], state["active"]),
+        *view(state, content={"step1_note": note}),
+    )
+
+
+def on_delete_segment(state, active):
+    state = _fresh_state(state)
+    segments, new_active, message = delete_segment(state["segments"], active)
+    state["segments"] = segments
+    state["active"] = new_active
+    return (
+        *_editor_pack(segments, new_active),
+        *view(state, content={"step1_note": message}),
+    )
+
+
+def on_open_segment(active, state):
+    state = _fresh_state(state)
+    start, end, visual, narration = editor_values(state["segments"], active)
+    if start is None and end is None and not visual and not narration:
+        return gr.update(), gr.update(), gr.update(), gr.update(), state
+    state["active"] = active
+    return start, end, visual, narration, state
+
+
+def on_segment_row(evt: gr.SelectData, state):
+    state = _fresh_state(state)
+    index = evt.index[0] if isinstance(evt.index, (list, tuple)) else evt.index
+    try:
+        index = int(index)
+    except (TypeError, ValueError):
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), state
+    if index < 0 or index >= len(state["segments"]):
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), state
+    state["active"] = str(index)
+    start, end, visual, narration = editor_values(state["segments"], index)
+    return gr.update(value=str(index)), start, end, visual, narration, state
+
+
 def on_table_select(evt: gr.SelectData, state):
     if not isinstance(state, dict):
         return gr.update(), gr.update(), gr.update(), gr.update()
@@ -523,15 +634,16 @@ def build_ui() -> gr.Blocks:
         title="口播对轴改稿",
         analytics_enabled=False,
         fill_height=False,
+        head=VIDEO_RELABEL_HEAD,
     )
     _bind_appearance(demo, build_theme(), css)
     with demo:
         gr.HTML(HERO_HTML, padding=False, elem_id="hero")
         with gr.Row(elem_classes=["nf-wizard"]):
             nav1 = gr.Button("1  准备材料", variant="primary", elem_id="nav-1")
-            nav2 = gr.Button("2  怎么改", variant="secondary", interactive=False, elem_id="nav-2")
-            nav3 = gr.Button("3  改稿中", variant="secondary", interactive=False, elem_id="nav-3")
-            nav4 = gr.Button("4  看结果", variant="secondary", interactive=False, elem_id="nav-4")
+            nav2 = gr.Button("2  选怎么改", variant="secondary", interactive=False, elem_id="nav-2")
+            nav3 = gr.Button("3  改稿", variant="secondary", interactive=False, elem_id="nav-3")
+            nav4 = gr.Button("4  对照下载", variant="secondary", interactive=False, elem_id="nav-4")
         hint = gr.Markdown(wizard_caption(1), elem_id="wizard-hint")
 
         with gr.Group(visible=True, elem_id="step-1", elem_classes=["nf-step-panel"]) as panel1:
@@ -540,34 +652,72 @@ def build_ui() -> gr.Blocks:
                 padding=False,
             )
             gr.HTML(
-                '<p class="nf-note">先给出已剪时间轴，和现在的口播全文。这一步只收材料，不展示改稿结果。</p>',
+                '<p class="nf-note">先给每一段一个起止时间，再点开那段写下口播。视频只在这台电脑上播放，改稿不会把视频发给模型，只用各段口播和秒数。</p>',
                 padding=False,
             )
-            timeline_text = gr.Textbox(
-                label="时间轴 JSON",
-                lines=8,
-                max_lines=18,
-                placeholder='{"title":"…","segments":[{"segment_id":"s1","start_s":0,"end_s":6,"visual":"画面说明"}]}',
-                info="有文本时优先用文本。每段需要 segment_id、start_s、end_s、visual。",
+            title_box = gr.Textbox(label="这条口播叫什么", placeholder="例如：馒头为什么会胀起来")
+            clip = gr.Video(
+                label="本地视频（可选）",
+                sources=["upload"],
+                interactive=True,
+                height=320,
+                elem_id="clip-video",
             )
-            draft_text = gr.Textbox(
-                label="口播全文",
-                lines=8,
-                max_lines=18,
-                placeholder="整篇口播。段落之间空一行。",
-                info="空行分段若和时间轴段数一致，对齐时会按顺序切开，这一步不调用模型。",
+            gr.HTML(
+                '<p class="nf-note">选你电脑上的视频后，就在这里播放。不选也能改：自己填每段的起止秒即可。</p>',
+                padding=False,
             )
-            with gr.Accordion("或者上传文件", open=False):
-                timeline_file = gr.File(label="时间轴 timeline.json", file_types=[".json"])
-                draft_file = gr.File(label="口播全文 .txt / .md", file_types=[".txt", ".md"])
+            with gr.Row():
+                playhead = gr.Number(
+                    value=0,
+                    label="当前播放位置（秒）",
+                    info="点下面的按钮时，会改成视频正在播放的位置。没有视频时，就用你填的这个数。",
+                    elem_id="playhead",
+                    precision=2,
+                    minimum=0,
+                )
+                btn_mark = gr.Button("在当前播放位置添加分段点", variant="secondary")
+            seg_table = gr.Dataframe(
+                headers=["段", "起（秒）", "止（秒）", "时长", "口播"],
+                datatype=["str", "str", "str", "str", "str"],
+                value=[],
+                interactive=False,
+                wrap=True,
+                show_label=False,
+                max_height=240,
+                elem_id="clip-table",
+            )
+            with gr.Group(elem_classes=["nf-editor"]):
+                gr.HTML('<h2 class="nf-section nf-subhead">逐段写口播</h2>', padding=False)
+                gr.HTML(
+                    '<p class="nf-hint">点列表里的一行，或在下拉里选一段。写完点「保存这一段」。各段口播都写上，下一步才会亮。</p>',
+                    padding=False,
+                )
+                seg_pick = gr.Dropdown(label="点开一段", choices=[], value=None, elem_id="seg-pick")
+                with gr.Row():
+                    seg_start = gr.Number(label="开始秒", precision=2, minimum=0)
+                    seg_end = gr.Number(label="结束秒", precision=2, minimum=0)
+                seg_visual = gr.Textbox(
+                    label="画面里有什么",
+                    lines=2,
+                    placeholder="可选。不写也能进下一步，这段改稿时就少了画面信息。",
+                )
+                seg_narration = gr.Textbox(
+                    label="这一段的口播",
+                    lines=4,
+                    placeholder="只写这一段要念的话，不要把整篇稿子贴在这里。",
+                )
+                with gr.Row():
+                    btn_save = gr.Button("保存这一段", variant="secondary")
+                    btn_delete = gr.Button("删掉这一段", variant="secondary")
             with gr.Row():
                 btn_demo = gr.Button("一键演示", variant="secondary")
                 btn_next = gr.Button("下一步", variant="primary", interactive=False)
-            step1_note = gr.Markdown("把时间轴和口播放进来，或点「一键演示」填入示例。")
+            step1_note = gr.Markdown("还没有分段。可以选本地视频打点，或点「一键演示」看填好的示例。")
 
         with gr.Group(visible=False, elem_id="step-2", elem_classes=["nf-step-panel"]) as panel2:
             gr.HTML(
-                '<div class="nf-step-head"><p class="nf-step-index">STEP 02</p><h2 class="nf-section">怎么改</h2></div>',
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 02</p><h2 class="nf-section">选怎么改</h2></div>',
                 padding=False,
             )
             gr.HTML(
@@ -607,11 +757,11 @@ def build_ui() -> gr.Blocks:
 
         with gr.Group(visible=False, elem_id="step-3", elem_classes=["nf-step-panel"]) as panel3:
             gr.HTML(
-                '<div class="nf-step-head"><p class="nf-step-index">STEP 03</p><h2 class="nf-section">改稿中</h2></div>',
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 03</p><h2 class="nf-section">改稿</h2></div>',
                 padding=False,
             )
             gr.HTML(
-                '<p class="nf-note">顺序是对齐、校验、改稿、再校验。跑完会自动进入第 4 步，成功和失败都会进。</p>',
+                '<p class="nf-note">顺序是对齐、校验、改稿、再校验。跑完会自动进入「对照下载」，成功和失败都会进。</p>',
                 padding=False,
             )
             rail = gr.HTML(steps_html("idle", caption="还没开始。"), padding=False, elem_id="steps")
@@ -619,7 +769,7 @@ def build_ui() -> gr.Blocks:
 
         with gr.Group(visible=False, elem_id="step-4", elem_classes=["nf-step-panel"]) as panel4:
             gr.HTML(
-                '<div class="nf-step-head"><p class="nf-step-index">STEP 04</p><h2 class="nf-section">看结果</h2></div>',
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 04</p><h2 class="nf-section">对照下载</h2></div>',
                 padding=False,
             )
             result_md = gr.Markdown("")
@@ -665,9 +815,9 @@ def build_ui() -> gr.Blocks:
             gr.HTML('<p class="nf-note">再改一次会保留已经填好的材料和策略。</p>', padding=False)
             with gr.Row():
                 btn_again_materials = gr.Button("再改一次：改材料", variant="secondary")
-                btn_again_strategy = gr.Button("再改一次：改策略", variant="primary")
+                btn_again_strategy = gr.Button("再改一次：选怎么改", variant="primary")
 
-        session = gr.State({"wizard_step": 1, "max_reached": 1})
+        session = gr.State({"wizard_step": 1, "max_reached": 1, "segments": [], "active": None, "title": ""})
         gr.HTML(FOOTER_HTML, padding=False)
 
         outputs = [
@@ -696,41 +846,70 @@ def build_ui() -> gr.Blocks:
             step1_note,
             session,
         ]
-        material_inputs = [timeline_text, draft_text, timeline_file, draft_file]
         settings_inputs = [strategy, chars_per_sec, must_keep, expand_short_ratio]
+        editor_outputs = [seg_table, seg_pick, seg_start, seg_end, seg_visual, seg_narration, btn_next]
+        editor_inputs = [session, title_box, seg_pick, seg_start, seg_end, seg_visual, seg_narration]
 
         nav1.click(lambda state: go_step(1, state), inputs=[session], outputs=outputs, show_progress="hidden")
         nav2.click(lambda state: go_step(2, state), inputs=[session], outputs=outputs, show_progress="hidden")
         nav3.click(lambda state: go_step(3, state), inputs=[session], outputs=outputs, show_progress="hidden")
         nav4.click(lambda state: go_step(4, state), inputs=[session], outputs=outputs, show_progress="hidden")
         btn_back.click(go_back, inputs=[session], outputs=outputs, show_progress="hidden")
-        btn_next.click(go_next, inputs=[session, *material_inputs], outputs=outputs, show_progress="hidden")
+        btn_next.click(go_next, inputs=editor_inputs, outputs=[*editor_outputs, *outputs], show_progress="hidden")
         btn_again_materials.click(lambda state: go_step(1, state), inputs=[session], outputs=outputs, show_progress="hidden")
         btn_again_strategy.click(lambda state: go_step(2, state), inputs=[session], outputs=outputs, show_progress="hidden")
 
-        for box in (timeline_text, draft_text, timeline_file, draft_file):
-            box.change(toggle_next, inputs=material_inputs, outputs=[btn_next], show_progress="hidden")
+        btn_mark.click(
+            on_add_mark,
+            inputs=[playhead, session],
+            outputs=[playhead, *editor_outputs, *outputs],
+            js=MARK_JS,
+            show_progress="hidden",
+        )
+        btn_save.click(
+            on_save_segment,
+            inputs=editor_inputs,
+            outputs=[*editor_outputs, *outputs],
+            show_progress="hidden",
+        )
+        btn_delete.click(
+            on_delete_segment,
+            inputs=[session, seg_pick],
+            outputs=[*editor_outputs, *outputs],
+            show_progress="hidden",
+        )
+        seg_pick.change(
+            on_open_segment,
+            inputs=[seg_pick, session],
+            outputs=[seg_start, seg_end, seg_visual, seg_narration, session],
+            show_progress="hidden",
+        )
+        seg_table.select(
+            on_segment_row,
+            inputs=[session],
+            outputs=[seg_pick, seg_start, seg_end, seg_visual, seg_narration, session],
+            show_progress="hidden",
+        )
 
         btn_demo.click(
             load_demo,
             inputs=[session],
             outputs=[
-                timeline_file,
-                timeline_text,
-                draft_file,
-                draft_text,
+                clip,
+                playhead,
+                title_box,
+                *editor_outputs,
                 strategy,
                 chars_per_sec,
                 must_keep,
                 expand_short_ratio,
-                btn_next,
                 *outputs,
             ],
             show_progress="hidden",
         )
         btn_run.click(
             run_job,
-            inputs=[session, timeline_file, timeline_text, draft_file, draft_text, *settings_inputs],
+            inputs=[session, title_box, *settings_inputs],
             outputs=outputs,
             show_progress="hidden",
             concurrency_limit=1,

@@ -28,11 +28,16 @@ from studio_lib.pipeline import (  # noqa: E402
     revalidate,
     run_pipeline,
 )
+from studio_lib.materials import (  # noqa: E402
+    add_cut,
+    build_job_inputs,
+    example_materials,
+    segments_ready,
+)
 from studio_lib.present import (  # noqa: E402
     HERO_HTML,
     clamp_wizard_target,
     diff_preview,
-    materials_present,
     overview_html,
     steps_html,
     table_rows,
@@ -179,12 +184,16 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertEqual(clamp_wizard_target(1, 4), 1)
         self.assertEqual(clamp_wizard_target(4, 4), 4)
         self.assertIsNone(clamp_wizard_target(0, 4))
-        self.assertFalse(materials_present("", "有口播"))
-        self.assertFalse(materials_present("  { }  ", "   "))
-        self.assertTrue(materials_present("{ }", "口播"))
+        self.assertFalse(segments_ready([]))
+        self.assertFalse(segments_ready([{"start_s": 0, "end_s": 4, "narration": "  ", "visual": "", "label": ""}]))
+        self.assertTrue(
+            segments_ready([{"start_s": 0, "end_s": 4, "narration": "有口播", "visual": "", "label": ""}])
+        )
         self.assertIn("第 1 步", wizard_caption(1))
         self.assertIn("下一步", wizard_caption(1))
+        self.assertIn("选怎么改", wizard_caption(2))
         self.assertIn("开始改稿", wizard_caption(2))
+        self.assertIn("对照下载", wizard_caption(4))
         self.assertIn("第 4 步", wizard_caption(4))
         idle = steps_html("idle", caption="还没开始。")
         self.assertNotIn('class="active"', idle)
@@ -193,21 +202,31 @@ class StudioDryRunTests(unittest.TestCase):
     def test_wizard_demo_stays_on_step_one_and_missing_token_lands_on_step_four(self):
         import app as studio_app
 
-        state = {"wizard_step": 1, "max_reached": 1}
+        state = {"wizard_step": 1, "max_reached": 1, "segments": [], "active": None, "title": ""}
         filled = studio_app.load_demo(state)
-        timeline_text, draft_text = filled[1], filled[3]
-        self.assertIn("segments", timeline_text)
-        self.assertTrue(draft_text.strip())
-        self.assertEqual(filled[-1]["wizard_step"], 1)
-        self.assertEqual(filled[-1]["max_reached"], 1)
-        self.assertIn("还不展示改稿结果", filled[-2])
-        self.assertTrue(filled[8].get("interactive"))
+        demo_state = filled[-1]
+        self.assertEqual(demo_state["wizard_step"], 1)
+        self.assertEqual(demo_state["max_reached"], 1)
+        self.assertEqual(len(demo_state["segments"]), 4)
+        self.assertTrue(all(row["narration"].strip() for row in demo_state["segments"]))
+        self.assertIn("还不改稿", filled[-2])
+        self.assertTrue(filled[9].get("interactive"))
+        self.assertNotIn("时间轴 JSON", (STUDIO / "app.py").read_text(encoding="utf-8"))
 
-        blocked = studio_app.go_next({"wizard_step": 1, "max_reached": 1}, "", "", None, None)
+        blocked = studio_app.go_next(state, "", None, None, None, "", "")
         self.assertEqual(blocked[-1]["wizard_step"], 1)
-        self.assertIn("都要有内容", blocked[4])
+        self.assertIn("第 1 步", blocked[11])
 
-        advanced = studio_app.go_next(filled[-1], timeline_text, draft_text, None, None)
+        first = demo_state["segments"][0]
+        advanced = studio_app.go_next(
+            demo_state,
+            demo_state["title"],
+            0,
+            first["start_s"],
+            first["end_s"],
+            first["visual"],
+            first["narration"],
+        )
         self.assertEqual(advanced[-1]["wizard_step"], 2)
         self.assertGreaterEqual(advanced[-1]["max_reached"], 2)
         locked = studio_app.go_step(4, advanced[-1])
@@ -219,14 +238,11 @@ class StudioDryRunTests(unittest.TestCase):
             events = list(
                 studio_app.run_job(
                     advanced[-1],
-                    None,
-                    timeline_text,
-                    None,
-                    draft_text,
-                    filled[4],
-                    filled[5],
-                    filled[6],
-                    filled[7],
+                    advanced[-1]["title"],
+                    "trim",
+                    4.7,
+                    "气孔是发酵留下的，不是后来吹进去的",
+                    0.7,
                 )
             )
         finally:
@@ -275,14 +291,36 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertNotIn("#efe6d6", css)
         self.assertNotIn("#9a5322", css)
         self.assertIn("nf-hero", HERO_HTML)
-        self.assertIn("时间轴稿", HERO_HTML)
-        self.assertIn("选策略", HERO_HTML)
+        self.assertIn("准备材料", HERO_HTML)
+        self.assertIn("选怎么改", HERO_HTML)
         self.assertIn("对照下载", HERO_HTML)
+        self.assertNotIn("时间轴稿", HERO_HTML)
         app_text = (STUDIO / "app.py").read_text(encoding="utf-8")
         self.assertIn("STEP 01", app_text)
         self.assertIn("STEP 04", app_text)
         self.assertNotIn("#9a5322", app_text)
         self.assertNotIn("theme=build_theme()", app_text)
+
+    def test_segment_marks_become_timeline_and_draft(self):
+        segments, active, message = add_cut([], 6)
+        self.assertEqual(active, 0)
+        self.assertIn("第 1 段", message)
+        segments, active, _message = add_cut(segments, 18)
+        self.assertEqual(len(segments), 2)
+        self.assertEqual(segments[1]["start_s"], 6)
+        self.assertEqual(segments[1]["end_s"], 18)
+        segments[0]["narration"] = "第一段口播"
+        segments[1]["narration"] = "第二段口播\n仍是这一段"
+        self.assertTrue(segments_ready(segments))
+        timeline_text, draft = build_job_inputs("试用", segments)
+        timeline = json.loads(timeline_text)
+        self.assertEqual([row["segment_id"] for row in timeline["segments"]], ["s1", "s2"])
+        self.assertEqual(timeline["segments"][0]["visual"], "（这段还没写画面）")
+        self.assertEqual(draft.split("\n\n"), ["第一段口播", "第二段口播 仍是这一段"])
+        title, example, *_rest = example_materials()
+        self.assertEqual(title, "馒头为什么会胀起来")
+        self.assertEqual(len(example), 4)
+        self.assertTrue(segments_ready(example))
 
 
 if __name__ == "__main__":
