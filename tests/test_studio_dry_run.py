@@ -29,6 +29,7 @@ from studio_lib.pipeline import (  # noqa: E402
     run_pipeline,
 )
 from studio_lib.present import (  # noqa: E402
+    HERO_HTML,
     clamp_wizard_target,
     diff_preview,
     materials_present,
@@ -255,6 +256,33 @@ class StudioDryRunTests(unittest.TestCase):
         self.assertIn("Qwen/Qwen3.5-35B-A3B", align_text)
         self.assertIn("https://api-inference.modelscope.cn/v1", align_text)
         self.assertIn("Qwen/Qwen3.5-35B-A3B", present_text)
+
+    def test_studio_theme_uses_brand_tokens(self):
+        css = (STUDIO / "theme.css").read_text(encoding="utf-8")
+        compact = "".join(css.split())
+        for token in (
+            "--ck-bg:#f7f7f9",
+            "--ck-surface:#ffffff",
+            "--ck-text:#25233a",
+            "--ck-text-soft:#69647b",
+            "--ck-accent-a:#7656ed",
+            "--ck-accent-mid:#7c6cff",
+            "--ck-accent-b:#5f71f2",
+            "--ck-radius-xl:28px",
+            "linear-gradient(135deg,#fff8ee0%,#f7f2ff55%,#eef8ff100%)",
+        ):
+            self.assertIn(token, compact)
+        self.assertNotIn("#efe6d6", css)
+        self.assertNotIn("#9a5322", css)
+        self.assertIn("nf-hero", HERO_HTML)
+        self.assertIn("时间轴稿", HERO_HTML)
+        self.assertIn("选策略", HERO_HTML)
+        self.assertIn("对照下载", HERO_HTML)
+        app_text = (STUDIO / "app.py").read_text(encoding="utf-8")
+        self.assertIn("STEP 01", app_text)
+        self.assertIn("STEP 04", app_text)
+        self.assertNotIn("#9a5322", app_text)
+        self.assertNotIn("theme=build_theme()", app_text)
 
 
 if __name__ == "__main__":

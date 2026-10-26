@@ -280,22 +280,22 @@ def result_status(report: dict[str, Any], lines: list[str], *, source: str, head
 
 HERO_HTML = """
 <header class="nf-hero">
-  <p class="nf-kicker">NARRATION FIT</p>
+  <p class="nf-kicker">创空间 · 口播</p>
   <h1>口播对轴改稿</h1>
-  <p class="nf-lede">成片时间轴已经定了。按你选的语速给每段一个字数预算，把现有口播改到能对着画面念完。模型只改文字，超不超只认本地脚本。</p>
-  <ul class="nf-points">
-    <li>1 准备材料</li>
-    <li>2 怎么改</li>
-    <li>3 改稿中</li>
-    <li>4 看结果</li>
-  </ul>
+  <p class="nf-lede">成片时间已经定了，口播却对不齐画面。按语速给每段一个字数预算，把现有稿子改到能对着画面念完。</p>
+  <ol class="nf-flow">
+    <li><span>时间轴稿</span></li>
+    <li><span>选策略</span></li>
+    <li><span>改稿</span></li>
+    <li><span>对照下载</span></li>
+  </ol>
 </header>
 """.strip()
 
 
 FOOTER_HTML = """
 <footer class="nf-footer">
-  <p>示例文案为本 Skill 原创，仅供演示。字数预算是检查值，不等于真实发声时长。本工作室不读视频，也不做配音。</p>
+  <p>创空间 · 口播对轴改稿。示例文案仅供演示。字数预算是检查值，不等于真实发声时长。不读视频，也不做配音。</p>
   <p>推理只在点「开始改稿」时发生：<code>https://api-inference.modelscope.cn/v1</code> · <code>Qwen/Qwen3.5-35B-A3B</code>。令牌只读环境变量 <code>MODELSCOPE_API_TOKEN</code>，不会写进页面或代码。</p>
 </footer>
 """.strip()

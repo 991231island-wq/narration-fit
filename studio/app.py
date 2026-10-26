@@ -8,7 +8,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import inspect
 import sys
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -447,61 +450,82 @@ def on_table_select(evt: gr.SelectData, state):
 
 
 def build_theme() -> gr.Theme:
+    """Gradio 主题引擎不吃 CSS 变量，这里只镜像 theme.css 里的 --ck-*。"""
     return gr.themes.Soft(
-        primary_hue="stone",
-        secondary_hue="stone",
-        neutral_hue="stone",
+        primary_hue="purple",
+        secondary_hue="purple",
+        neutral_hue="slate",
         font=["PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", "Segoe UI", "sans-serif"],
     ).set(
-        body_background_fill="#efe6d6",
-        body_background_fill_dark="#efe6d6",
-        block_background_fill="#fffdf8",
-        block_background_fill_dark="#fffdf8",
-        block_border_color="#e4d5c0",
-        block_label_text_color="#5c5348",
-        block_title_text_color="#1c1915",
-        body_text_color="#1c1915",
-        body_text_color_dark="#1c1915",
-        body_text_color_subdued="#5c5348",
-        body_text_color_subdued_dark="#5c5348",
-        background_fill_primary="#fffdf8",
-        background_fill_primary_dark="#fffdf8",
-        background_fill_secondary="#f6efe4",
-        background_fill_secondary_dark="#f6efe4",
-        border_color_primary="#e4d5c0",
-        border_color_primary_dark="#e4d5c0",
-        button_primary_background_fill="#9a5322",
-        button_primary_background_fill_dark="#9a5322",
-        button_primary_background_fill_hover="#7c411c",
-        button_primary_background_fill_hover_dark="#7c411c",
-        button_primary_text_color="#fffaf3",
-        button_primary_text_color_dark="#fffaf3",
-        button_secondary_background_fill="#fffdf8",
-        button_secondary_background_fill_dark="#fffdf8",
-        button_secondary_background_fill_hover="#f3e7d4",
-        button_secondary_background_fill_hover_dark="#f3e7d4",
-        button_secondary_text_color="#1c1915",
-        button_secondary_text_color_dark="#1c1915",
-        button_secondary_border_color="#ddcfbc",
-        button_secondary_border_color_dark="#ddcfbc",
-        input_background_fill="#fffdf8",
-        input_background_fill_dark="#fffdf8",
-        input_border_color="#e4d5c0",
-        input_border_color_dark="#e4d5c0",
-        shadow_drop="none",
-        shadow_drop_lg="0 12px 28px rgba(70, 48, 24, 0.06)",
+        body_background_fill="#f7f7f9",
+        body_background_fill_dark="#14131c",
+        block_background_fill="#ffffff",
+        block_background_fill_dark="#1e1c28",
+        block_border_color="#e4e0ee",
+        block_border_color_dark="#3a3550",
+        block_label_text_color="#69647b",
+        block_label_text_color_dark="#b9b3c9",
+        block_title_text_color="#25233a",
+        block_title_text_color_dark="#f3f1f8",
+        body_text_color="#25233a",
+        body_text_color_dark="#f3f1f8",
+        body_text_color_subdued="#69647b",
+        body_text_color_subdued_dark="#b9b3c9",
+        background_fill_primary="#ffffff",
+        background_fill_primary_dark="#1e1c28",
+        background_fill_secondary="#faf9fd",
+        background_fill_secondary_dark="#18171f",
+        border_color_primary="#e4e0ee",
+        border_color_primary_dark="#3a3550",
+        button_primary_background_fill="#7656ed",
+        button_primary_background_fill_dark="#7656ed",
+        button_primary_background_fill_hover="#7c6cff",
+        button_primary_background_fill_hover_dark="#7c6cff",
+        button_primary_text_color="#ffffff",
+        button_primary_text_color_dark="#ffffff",
+        button_secondary_background_fill="#ffffff",
+        button_secondary_background_fill_dark="#1e1c28",
+        button_secondary_background_fill_hover="#f8f7ff",
+        button_secondary_background_fill_hover_dark="#262333",
+        button_secondary_text_color="#7656ed",
+        button_secondary_text_color_dark="#c4b8ff",
+        button_secondary_border_color="#d9d3f2",
+        button_secondary_border_color_dark="#3a3550",
+        input_background_fill="#ffffff",
+        input_background_fill_dark="#1e1c28",
+        input_border_color="#e4e0ee",
+        input_border_color_dark="#3a3550",
+        shadow_drop="0 8px 26px rgba(50, 40, 90, 0.05)",
+        shadow_drop_lg="0 12px 36px rgba(69, 53, 120, 0.08)",
+        block_radius="20px",
+        button_large_radius="12px",
+        button_small_radius="10px",
     )
+
+
+def _bind_appearance(demo: gr.Blocks, theme: gr.Theme, css: str) -> None:
+    """Gradio 5 在构造 Blocks 时收 theme/css，并因此报警。
+    构造后再挂上，页面效果相同，且不走即将删除的参数。
+    Gradio 6 则在 launch() 接收 theme/css。
+    """
+    demo.theme = theme
+    demo.theme_css = theme._get_theme_css()
+    demo.stylesheets = theme._stylesheets
+    hasher = hashlib.sha256()
+    hasher.update(demo.theme_css.encode("utf-8"))
+    demo.theme_hash = hasher.hexdigest()
+    demo.css = css
 
 
 def build_ui() -> gr.Blocks:
     css = THEME_PATH.read_text(encoding="utf-8")
-    with gr.Blocks(
+    demo = gr.Blocks(
         title="口播对轴改稿",
-        theme=build_theme(),
-        css=css,
         analytics_enabled=False,
         fill_height=False,
-    ) as demo:
+    )
+    _bind_appearance(demo, build_theme(), css)
+    with demo:
         gr.HTML(HERO_HTML, padding=False, elem_id="hero")
         with gr.Row(elem_classes=["nf-wizard"]):
             nav1 = gr.Button("1  准备材料", variant="primary", elem_id="nav-1")
@@ -511,7 +535,10 @@ def build_ui() -> gr.Blocks:
         hint = gr.Markdown(wizard_caption(1), elem_id="wizard-hint")
 
         with gr.Group(visible=True, elem_id="step-1", elem_classes=["nf-step-panel"]) as panel1:
-            gr.HTML('<h2 class="nf-section">准备材料</h2>', padding=False)
+            gr.HTML(
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 01</p><h2 class="nf-section">准备材料</h2></div>',
+                padding=False,
+            )
             gr.HTML(
                 '<p class="nf-note">先给出已剪时间轴，和现在的口播全文。这一步只收材料，不展示改稿结果。</p>',
                 padding=False,
@@ -539,7 +566,10 @@ def build_ui() -> gr.Blocks:
             step1_note = gr.Markdown("把时间轴和口播放进来，或点「一键演示」填入示例。")
 
         with gr.Group(visible=False, elem_id="step-2", elem_classes=["nf-step-panel"]) as panel2:
-            gr.HTML('<h2 class="nf-section">怎么改</h2>', padding=False)
+            gr.HTML(
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 02</p><h2 class="nf-section">怎么改</h2></div>',
+                padding=False,
+            )
             gr.HTML(
                 '<p class="nf-note">策略决定怎么改字。语速决定每段预算。脚本按你填的数字算，不会改它。</p>',
                 padding=False,
@@ -576,7 +606,10 @@ def build_ui() -> gr.Blocks:
                 btn_run = gr.Button("开始改稿", variant="primary")
 
         with gr.Group(visible=False, elem_id="step-3", elem_classes=["nf-step-panel"]) as panel3:
-            gr.HTML('<h2 class="nf-section">改稿中</h2>', padding=False)
+            gr.HTML(
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 03</p><h2 class="nf-section">改稿中</h2></div>',
+                padding=False,
+            )
             gr.HTML(
                 '<p class="nf-note">顺序是对齐、校验、改稿、再校验。跑完会自动进入第 4 步，成功和失败都会进。</p>',
                 padding=False,
@@ -585,7 +618,10 @@ def build_ui() -> gr.Blocks:
             run_status = gr.Markdown("点第 2 步的「开始改稿」后，进度会出现在这里。", elem_id="run-status")
 
         with gr.Group(visible=False, elem_id="step-4", elem_classes=["nf-step-panel"]) as panel4:
-            gr.HTML('<h2 class="nf-section">看结果</h2>', padding=False)
+            gr.HTML(
+                '<div class="nf-step-head"><p class="nf-step-index">STEP 04</p><h2 class="nf-section">看结果</h2></div>',
+                padding=False,
+            )
             result_md = gr.Markdown("")
             overview = gr.HTML(EMPTY_OVERVIEW, padding=False, elem_id="overview")
             gr.HTML(
@@ -603,7 +639,7 @@ def build_ui() -> gr.Blocks:
                 elem_id="segment-table",
             )
             with gr.Group(elem_classes=["nf-editor"]):
-                gr.HTML('<h2 class="nf-section">改一段，立刻重验</h2>', padding=False)
+                gr.HTML('<h2 class="nf-section nf-subhead">改一段，立刻重验</h2>', padding=False)
                 gr.HTML(
                     '<p class="nf-hint">只改「改后」。重验此段或全部都只跑本地脚本，不调用模型。换段之前先重验。</p>',
                     padding=False,
@@ -616,7 +652,7 @@ def build_ui() -> gr.Blocks:
                 with gr.Row():
                     btn_one = gr.Button("重验此段", variant="primary")
                     btn_all = gr.Button("重验全部", variant="secondary")
-            gr.HTML('<h2 class="nf-section">对照预览</h2>', padding=False)
+            gr.HTML('<h2 class="nf-section nf-subhead">对照预览</h2>', padding=False)
             gr.HTML(
                 '<p class="nf-note">删除线是拿掉的字，绿色底是新增的字。下载的 diff.html 用同一份渲染。</p>',
                 padding=False,
@@ -719,15 +755,30 @@ def build_ui() -> gr.Blocks:
 def main() -> None:
     demo = build_ui()
     demo.queue()
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
-        show_api=False,
-        show_error=False,
-        inbrowser=False,
-        quiet=False,
-    )
+    launch_kwargs: dict[str, Any] = {
+        "server_name": "0.0.0.0",
+        "server_port": 7860,
+        "share": False,
+        "show_error": False,
+        "inbrowser": False,
+        "quiet": False,
+    }
+    params = inspect.signature(demo.launch).parameters
+    if "theme" in params and "css" in params:
+        launch_kwargs["theme"] = demo.theme
+        launch_kwargs["css"] = demo.css
+    if "footer_links" in params:
+        # 等价于旧的 show_api=False：留 Gradio 与设置，不展示 API 文档。
+        launch_kwargs["footer_links"] = ["gradio", "settings"]
+    else:
+        launch_kwargs["show_api"] = False
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"The 'show_api' parameter in launch\(\) will be removed",
+            category=DeprecationWarning,
+        )
+        demo.launch(**launch_kwargs)
 
 
 if __name__ == "__main__":
